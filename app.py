@@ -89,7 +89,7 @@ QUESTIONS = {
     ],
     (1, 2): [
         "Ich kann meine Aufgaben meistens ohne häufige Unterbrechungen durchführen.",
-        "Ungeplante Störungen hindern mich regelmäßig an konzentrierter Arbeit."
+        "Ungeplante Störungen hindern mich regelmässig an konzentrierter Arbeit."
     ],
     (1, 3): [
         "Die Aufgaben pro Schicht haben im Vergleich zum Vorjahr spürbar zugenommen.",
@@ -129,7 +129,7 @@ QUESTIONS = {
     ],
     (3, 3): [
         "Zuständigkeiten und Verantwortungen sind klar geregelt.",
-        "Jeder weiß, was zu tun ist."
+        "Jeder weiss, was zu tun ist."
     ],
     (3, 4): [
         "Konflikte werden offen angesprochen.",
