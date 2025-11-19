@@ -346,7 +346,7 @@ def render_wg_selection():
         st.rerun()
 
 def render_survey():
-    """Haupt-Befragung mit allen Fragen"""
+    """Haupt-Befragung mit allen Fragen - OHNE Domänen-Namen"""
     st.markdown('<div class="main-header">', unsafe_allow_html=True)
     st.title("📝 Mitarbeiterbefragung")
     st.markdown('</div>', unsafe_allow_html=True)
@@ -380,15 +380,14 @@ def render_survey():
     st.progress(progress)
     st.write(f"Fortschritt: {completed_questions + 1} von {total_questions} Fragen")
     
-    # Frage anzeigen
-    st.subheader(f"Domäne {domain}: {DOMAINS[domain]}")
-    st.write(f"**{SUBDOMAINS[domain][subdomain]}**")
+    # Frage anzeigen - OHNE Domänen-Informationen
+    st.subheader("Bitte beantworte die folgenden Fragen:")
     
     answers = []
     for i, question in enumerate(questions):
         st.write(f"**{question}**")
         answer = st.radio(
-            f"Antwort:",
+            f"Deine Antwort:",
             options=["Trifft voll zu", "Trifft zu", "Teils/teils", "Trifft nicht zu", "Trifft gar nicht zu"],
             key=f"q_{domain}_{subdomain}_{i}",
             index=None
@@ -410,7 +409,7 @@ def render_survey():
         all_answered = all(answers) and len(answers) > 0
         if all_answered:
             if st.button("Weiter →"):
-                # Antworten speichern
+                # Antworten speichern (mit Domänen-Info für spätere Auswertung)
                 st.session_state.answers[current_key] = answers
                 st.rerun()
         else:
@@ -444,7 +443,7 @@ def calculate_scores():
     return avg_scores
 
 def create_pdf_report():
-    """Erstellt einen PDF-Report mit den Ergebnissen - verbessertes Layout mit mehr Abstand"""
+    """Erstellt einen PDF-Report mit den Ergebnissen - MIT Domänen-Informationen"""
     buffer = io.BytesIO()
     c = canvas.Canvas(buffer, pagesize=A4)
     width, height = A4
@@ -467,14 +466,14 @@ def create_pdf_report():
     # Überschrift für Ergebnisse
     c.setFillColorRGB(0.4, 0.6, 0.4)  # Minzgrün
     c.setFont("Helvetica-Bold", 16)
-    c.drawString(50, y_position, "Ergebnisse nach Domänen:")
-    y_position -= 50  # Mehr Abstand
+    c.drawString(50, y_position, "Ergebnisse nach Themenbereichen:")
+    y_position -= 50
     
     scores = calculate_scores()
     
     for domain in range(1, 9):
         # Prüfen ob neue Seite benötigt wird
-        if y_position < 120:  # Höhere Grenze für mehr Abstand
+        if y_position < 120:
             c.showPage()
             y_position = height - 60
             c.setFont("Helvetica", 11)
@@ -485,7 +484,7 @@ def create_pdf_report():
         # Domänen-Name
         c.setFillColorRGB(0.2, 0.2, 0.2)  # Anthrazit
         c.setFont("Helvetica-Bold", 13)
-        c.drawString(60, y_position, f"Domäne {domain}:")
+        c.drawString(60, y_position, f"Bereich {domain}:")
         
         # Domänen-Beschreibung
         c.setFont("Helvetica", 11)
@@ -525,10 +524,10 @@ def create_pdf_report():
         c.rect(bar_x, bar_y, bar_width, bar_height, fill=0, stroke=1)
         
         # Nächste Position mit mehr Abstand
-        y_position -= (text_height + 35)  # Mehr Abstand zwischen Domänen
+        y_position -= (text_height + 35)
     
     # Gesamtscore auf neuer Seite oder mit Abstand
-    if y_position < 180:  # Mehr Platz für Zusammenfassung
+    if y_position < 180:
         c.showPage()
         y_position = height - 100
     
