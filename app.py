@@ -208,7 +208,7 @@ QUESTIONS = {
     
     # DOMÄNE 8 – Kommunikation & Informationsfluss
     (8, 1): [
-        "Übergaben sind vollständichent und strukturiert.",
+        "Übergaben sind vollständig und strukturiert.",
         "Ich weiß zu Schichtbeginn, was mich erwartet."
     ],
     (8, 2): [
@@ -236,8 +236,28 @@ def initialize_session():
 
 def render_wg_selection():
     """WG Auswahl Schritt"""
-    st.title("🏠 Mitarbeiterbefragung")
-    st.subheader("Bitte wählen Sie Ihre Wohngruppe aus")
+    st.title("🏠 Mitarbeiterbefragung Hausverbund A")
+    
+    st.markdown("""
+    Im Mai 2025 fand die kantonale Personalbefragung der Institutionen für Menschen mit Behinderungen statt. 
+    Die Ergebnisse für unseren Bereich waren insgesamt erfreulich und haben sowohl Stärken als auch Entwicklungsbereiche aufgezeigt.
+
+    **Um diese Ergebnisse besser zu verstehen**, führen wir nun eine vertiefte Befragung in unserem **Hausverbund A** durch. 
+    Wir möchten genauer nachvollziehen:
+    - Was hinter den positiven Rückmeldungen steht  
+    - Wo die Ursachen für kritischere Bewertungen liegen
+
+    **Wichtig:** Es geht nicht um die Beurteilung Einzelner, sondern um eine strukturierte Analyse der 
+    Arbeitsbedingungen, Belastungen und Teamstärken **in unserem Hausverbund A**.
+
+    **Deine Teilnahme ist wertvoll**, denn nur durch eine breite Beteiligung entsteht ein realistisches Bild 
+    unserer Situation **im Hausverbund A**. Je genauer die Rückmeldungen, desto besser können wir verstehen, 
+    was im Alltag gut funktioniert und wo Verbesserungen sinnvoll sind.
+
+    Vielen Dank für deine Mitarbeit und die investierte Zeit!
+    """)
+    
+    st.subheader("Bitte wähle deine Wohngruppe aus")
     
     selected_wg = st.selectbox(
         "Wohngruppe:",
@@ -245,7 +265,7 @@ def render_wg_selection():
         key="wg_select"
     )
     
-    st.info("💡 Die Befragung ist komplett anonym. Ihre Antworten können nicht Ihnen persönlich zugeordnet werden.")
+    st.info("💡 Die Befragung ist komplett anonym. Deine Antworten können nicht dir persönlich zugeordnet werden.")
     
     if st.button("Befragung starten"):
         st.session_state.wg_selected = selected_wg
@@ -466,9 +486,9 @@ def create_pdf_report():
 def render_results():
     """Zeigt die Ergebnisse und PDF-Download an"""
     st.title("✅ Befragung abgeschlossen!")
-    st.success("Vielen Dank für Ihre Teilnahme an der Befragung!")
+    st.success("Vielen Dank für deine Teilnahme an der Befragung!")
     
-    st.subheader("Zusammenfassung Ihrer Antworten")
+    st.subheader("Zusammenfassung deiner Antworten")
     
     scores = calculate_scores()
     for domain in range(1, 9):
@@ -478,7 +498,7 @@ def render_results():
     
     # PDF Download
     st.subheader("PDF-Bericht")
-    st.write("Sie können hier eine Zusammenfassung Ihrer Antworten als PDF herunterladen:")
+    st.write("Du kannst hier eine Zusammenfassung deiner Antworten als PDF herunterladen:")
     
     pdf_buffer = create_pdf_report()
     
