@@ -4,6 +4,8 @@ from datetime import datetime
 import json
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
+from reportlab.platypus import Table, TableStyle
+from reportlab.lib import colors
 import io
 
 # Konfiguration
@@ -225,13 +227,26 @@ QUESTIONS = {
     ]
 }
 
-# Farbschema: Minzgrün, Anthrazit, Weiss
+# Neues Farbschema: Matteres Grün, Anthrazit, Weiss
 COLORS = {
-    "mint": "#98FB98",      # Hell Minzgrün
+    "mint": "#A8D5BA",      # Matteres Minzgrün (nicht mehr giftig)
     "anthrazit": "#2F4F4F", # Anthrazit
     "white": "#FFFFFF",     # Weiss
-    "light_gray": "#F8F9FA" # Hellgrau für Hintergründe
+    "light_gray": "#F8F9FA", # Hellgrau für Hintergründe
+    "dark_green": "#4A7C59", # Dunkleres Grün für Akzente
+    "light_mint": "#D4EDDA"  # Sehr helles Minzgrün
 }
+
+def get_interpretation(score):
+    """Gibt die Interpretation eines Scores zurück"""
+    if score >= 4.2:
+        return "Sehr gut", colors.HexColor("#1E6F5C")  # Dunkles Grün
+    elif score >= 3.6:
+        return "Gut", colors.HexColor("#2B8C69")       # Mittelgrün
+    elif score >= 3.0:
+        return "Mittel", colors.HexColor("#E9B44C")    # Gelb
+    else:
+        return "Verbesserungsbedarf", colors.HexColor("#D9534F")  # Rot
 
 def initialize_session():
     """Initialisiert die Session State Variablen"""
@@ -264,7 +279,7 @@ def apply_custom_styles():
     }}
     
     .stButton>button:hover {{
-        background-color: {COLORS['anthrazit']};
+        background-color: {COLORS['dark_green']};
         color: {COLORS['white']};
     }}
     
@@ -289,10 +304,11 @@ def apply_custom_styles():
     
     /* Erfolgsmeldung */
     .stSuccess {{
-        background-color: {COLORS['mint']}30;
+        background-color: {COLORS['light_mint']};
         border: 1px solid {COLORS['mint']};
         border-radius: 8px;
         padding: 15px;
+        color: {COLORS['anthrazit']};
     }}
     
     /* Info Box */
@@ -443,18 +459,17 @@ def calculate_scores():
     return avg_scores
 
 def create_pdf_report():
-    """Erstellt einen PDF-Report mit den Ergebnissen - MIT Domänen-Informationen"""
+    """Erstellt einen PDF-Report mit Tabellen und Interpretationen"""
     buffer = io.BytesIO()
     c = canvas.Canvas(buffer, pagesize=A4)
     width, height = A4
     
-    # Titel mit Farbe
-    c.setFillColorRGB(0.4, 0.6, 0.4)  # Minzgrün
+    # Titel mit neuem Farbschema
+    c.setFillColor(colors.HexColor(COLORS['anthrazit']))
     c.setFont("Helvetica-Bold", 20)
     c.drawString(50, height - 60, "Mitarbeiterbefragung - Ergebnisbericht")
     
     # Metadaten
-    c.setFillColorRGB(0.2, 0.2, 0.2)  # Anthrazit
     c.setFont("Helvetica", 12)
     c.drawString(50, height - 90, f"Wohngruppe: {st.session_state.wg_selected}")
     c.drawString(50, height - 110, f"Datum: {datetime.now().strftime('%d.%m.%Y')}")
@@ -464,107 +479,109 @@ def create_pdf_report():
     y_position = height - 170
     
     # Überschrift für Ergebnisse
-    c.setFillColorRGB(0.4, 0.6, 0.4)  # Minzgrün
+    c.setFillColor(colors.HexColor(COLORS['anthrazit']))
     c.setFont("Helvetica-Bold", 16)
     c.drawString(50, y_position, "Ergebnisse nach Themenbereichen:")
-    y_position -= 50
+    y_position -= 40
     
     scores = calculate_scores()
     
+    # Tabellendaten vorbereiten
+    table_data = [['Bereich', 'Thema', 'Score', 'Interpretation']]
+    
     for domain in range(1, 9):
-        # Prüfen ob neue Seite benötigt wird
-        if y_position < 120:
-            c.showPage()
-            y_position = height - 60
-            c.setFont("Helvetica", 11)
-        
         domain_name = DOMAINS[domain]
         score = scores.get(domain, 0)
+        interpretation, color = get_interpretation(score)
         
-        # Domänen-Name
-        c.setFillColorRGB(0.2, 0.2, 0.2)  # Anthrazit
-        c.setFont("Helvetica-Bold", 13)
-        c.drawString(60, y_position, f"Bereich {domain}:")
-        
-        # Domänen-Beschreibung
-        c.setFont("Helvetica", 11)
+        # Bereich aufteilen falls zu lang
         if len(domain_name) > 40:
-            # Bei langen Namen auf zwei Zeilen aufteilen
             words = domain_name.split()
-            line1 = " ".join(words[:len(words)//2])
-            line2 = " ".join(words[len(words)//2:])
-            c.drawString(60, y_position - 18, line1)
-            c.drawString(60, y_position - 36, line2)
-            text_height = 54
+            domain_line1 = " ".join(words[:len(words)//2])
+            domain_line2 = " ".join(words[len(words)//2:])
+            table_data.append([f"Bereich {domain}", domain_line1, f"{score:.2f}/5", interpretation])
+            table_data.append(["", domain_line2, "", ""])
         else:
-            c.drawString(60, y_position - 18, domain_name)
-            text_height = 36
-        
-        # Score
-        c.setFont("Helvetica-Bold", 12)
-        c.drawString(400, y_position, f"{score:.2f}/5")
-        
-        # Visualisierung - Balkendiagramm mit Farben
-        bar_width = 200
-        bar_height = 14
-        bar_x = 180
-        bar_y = y_position - 12
-        
-        # Hintergrund (hellgrau)
-        c.setFillColorRGB(0.95, 0.95, 0.95)
-        c.rect(bar_x, bar_y, bar_width, bar_height, fill=1, stroke=0)
-        
-        # Vordergrund (minzgrün) basierend auf Score
-        fill_width = (score / 5) * bar_width
-        c.setFillColorRGB(0.6, 0.98, 0.6)  # Helleres Minzgrün
-        c.rect(bar_x, bar_y, fill_width, bar_height, fill=1, stroke=0)
-        
-        # Rahmen (anthrazit)
-        c.setFillColorRGB(0.2, 0.2, 0.2)
-        c.rect(bar_x, bar_y, bar_width, bar_height, fill=0, stroke=1)
-        
-        # Nächste Position mit mehr Abstand
-        y_position -= (text_height + 35)
+            table_data.append([f"Bereich {domain}", domain_name, f"{score:.2f}/5", interpretation])
     
-    # Gesamtscore auf neuer Seite oder mit Abstand
-    if y_position < 180:
-        c.showPage()
-        y_position = height - 100
+    # Tabelle erstellen
+    table = Table(table_data, colWidths=[80, 220, 80, 100])
     
-    c.setFillColorRGB(0.4, 0.6, 0.4)  # Minzgrün
-    c.setFont("Helvetica-Bold", 16)
-    c.drawString(60, y_position, "Zusammenfassung:")
+    # Tabellen-Stil
+    table.setStyle(TableStyle([
+        # Header
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor(COLORS['mint'])),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.HexColor(COLORS['anthrazit'])),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 12),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        
+        # Zellen
+        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 1), (-1, -1), 10),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+        ('TOPPADDING', (0, 0), (-1, -1), 8),
+        
+        # Rahmen
+        ('GRID', (0, 0), (-1, -1), 1, colors.HexColor(COLORS['anthrazit'])),
+        
+        # Zeilen-Hintergrund
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [
+            colors.HexColor(COLORS['light_gray']), 
+            colors.white
+        ]),
+    ]))
+    
+    # Interpretationen einfärben
+    for i in range(1, len(table_data)):
+        interpretation = table_data[i][3]
+        if interpretation == "Sehr gut":
+            bg_color = colors.HexColor("#1E6F5C")
+            text_color = colors.white
+        elif interpretation == "Gut":
+            bg_color = colors.HexColor("#2B8C69") 
+            text_color = colors.white
+        elif interpretation == "Mittel":
+            bg_color = colors.HexColor("#E9B44C")
+            text_color = colors.black
+        else:  # Verbesserungsbedarf
+            bg_color = colors.HexColor("#D9534F")
+            text_color = colors.white
+            
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (3, i), (3, i), bg_color),
+            ('TEXTCOLOR', (3, i), (3, i), text_color),
+            ('FONTNAME', (3, i), (3, i), 'Helvetica-Bold'),
+        ]))
+    
+    # Tabelle zeichnen
+    table.wrapOn(c, width, height)
+    table.drawOn(c, 50, y_position - (len(table_data) * 20))
+    
+    # Gesamtscore
+    y_position_summary = y_position - (len(table_data) * 20) - 60
     
     if scores:
         total_avg = sum(scores.values()) / len(scores) if scores else 0
+        total_interpretation, total_color = get_interpretation(total_avg)
         
-        y_position -= 50
-        c.setFillColorRGB(0.2, 0.2, 0.2)  # Anthrazit
-        c.setFont("Helvetica-Bold", 18)
-        c.drawString(60, y_position, f"Gesamtdurchschnitt: {total_avg:.2f}/5")
+        c.setFillColor(colors.HexColor(COLORS['anthrazit']))
+        c.setFont("Helvetica-Bold", 16)
+        c.drawString(50, y_position_summary, "Zusammenfassung:")
         
-        # Gesamt-Balken
-        total_bar_width = 250
-        total_bar_height = 18
-        total_bar_x = 60
-        total_bar_y = y_position - 40
+        c.setFont("Helvetica-Bold", 14)
+        c.drawString(50, y_position_summary - 30, f"Gesamtdurchschnitt: {total_avg:.2f}/5")
         
-        # Hintergrund
-        c.setFillColorRGB(0.95, 0.95, 0.95)
-        c.rect(total_bar_x, total_bar_y, total_bar_width, total_bar_height, fill=1, stroke=0)
-        
-        # Vordergrund
-        total_fill_width = (total_avg / 5) * total_bar_width
-        c.setFillColorRGB(0.4, 0.8, 0.4)  # Mittleres Minzgrün
-        c.rect(total_bar_x, total_bar_y, total_fill_width, total_bar_height, fill=1, stroke=0)
-        
-        # Rahmen
-        c.setFillColorRGB(0.2, 0.2, 0.2)
-        c.rect(total_bar_x, total_bar_y, total_bar_width, total_bar_height, fill=0, stroke=1)
+        # Interpretation des Gesamtscores
+        c.setFillColor(total_color)
+        c.drawString(200, y_position_summary - 30, f"({total_interpretation})")
         
         # Legende
-        c.setFont("Helvetica", 10)
-        c.drawString(60, total_bar_y - 25, "1 = Trifft gar nicht zu | 3 = Teils/teils | 5 = Trifft voll zu")
+        c.setFillColor(colors.HexColor(COLORS['anthrazit']))
+        c.setFont("Helvetica", 9)
+        c.drawString(50, y_position_summary - 60, "Interpretation: ≥4.2 = Sehr gut | ≥3.6 = Gut | ≥3.0 = Mittel | <3.0 = Verbesserungsbedarf")
+        c.drawString(50, y_position_summary - 75, "Skala: 1 = Trifft gar nicht zu | 3 = Teils/teils | 5 = Trifft voll zu")
     
     c.save()
     buffer.seek(0)
@@ -583,7 +600,8 @@ def render_results():
     scores = calculate_scores()
     for domain in range(1, 9):
         score = scores.get(domain, 0)
-        st.write(f"**{DOMAINS[domain]}:** {score:.2f}/5 Punkte")
+        interpretation, color = get_interpretation(score)
+        st.write(f"**{DOMAINS[domain]}:** {score:.2f}/5 Punkte - *{interpretation}*")
         st.progress(score / 5)
     
     # PDF Download
