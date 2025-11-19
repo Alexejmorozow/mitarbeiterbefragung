@@ -559,12 +559,11 @@ def create_pdf_report():
     table.wrapOn(c, width, height)
     table.drawOn(c, 50, y_position - (len(table_data) * 20))
     
-    # Gesamtscore
+    # Gesamtscore - NUR numerisch, ohne Interpretation
     y_position_summary = y_position - (len(table_data) * 20) - 60
     
     if scores:
         total_avg = sum(scores.values()) / len(scores) if scores else 0
-        total_interpretation, total_color = get_interpretation(total_avg)
         
         c.setFillColor(colors.HexColor(COLORS['anthrazit']))
         c.setFont("Helvetica-Bold", 16)
@@ -573,12 +572,7 @@ def create_pdf_report():
         c.setFont("Helvetica-Bold", 14)
         c.drawString(50, y_position_summary - 30, f"Gesamtdurchschnitt: {total_avg:.2f}/5")
         
-        # Interpretation des Gesamtscores
-        c.setFillColor(total_color)
-        c.drawString(200, y_position_summary - 30, f"({total_interpretation})")
-        
         # Legende
-        c.setFillColor(colors.HexColor(COLORS['anthrazit']))
         c.setFont("Helvetica", 9)
         c.drawString(50, y_position_summary - 60, "Interpretation: ≥4.2 = Sehr gut | ≥3.6 = Gut | ≥3.0 = Mittel | <3.0 = Verbesserungsbedarf")
         c.drawString(50, y_position_summary - 75, "Skala: 1 = Trifft gar nicht zu | 3 = Teils/teils | 5 = Trifft voll zu")
