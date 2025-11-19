@@ -8,6 +8,7 @@ import io
 
 # Konfiguration
 WG_OPTIONS = [
+    "Spezialangebot",
     "WG Fliegenpilz",
     "WG Kristall", 
     "WG Alphorn",
@@ -207,7 +208,7 @@ QUESTIONS = {
     
     # DOMÄNE 8 – Kommunikation & Informationsfluss
     (8, 1): [
-        "Übergaben sind vollständig und strukturiert.",
+        "Übergaben sind vollständichent und strukturiert.",
         "Ich weiß zu Schichtbeginn, was mich erwartet."
     ],
     (8, 2): [
@@ -347,13 +348,13 @@ def calculate_scores():
     return avg_scores
 
 def create_pdf_report():
-    """Erstellt einen PDF-Report mit den Ergebnissen"""
+    """Erstellt einen PDF-Report mit den Ergebnissen - verbessertes Layout"""
     buffer = io.BytesIO()
     c = canvas.Canvas(buffer, pagesize=A4)
     width, height = A4
     
     # Titel
-    c.setFont("Helvetica-Bold", 16)
+    c.setFont("Helvetica-Bold", 18)
     c.drawString(50, height - 50, "Mitarbeiterbefragung - Ergebnisbericht")
     
     # Metadaten
@@ -362,39 +363,101 @@ def create_pdf_report():
     c.drawString(50, height - 100, f"Datum: {datetime.now().strftime('%d.%m.%Y')}")
     c.drawString(50, height - 120, "Hinweis: Diese Befragung wurde anonym durchgeführt.")
     
-    # Ergebnisse
-    c.setFont("Helvetica-Bold", 14)
-    c.drawString(50, height - 160, "Ergebnisse nach Domänen:")
+    # Abstand
+    y_position = height - 160
     
-    y_position = height - 190
+    # Überschrift für Ergebnisse
+    c.setFont("Helvetica-Bold", 16)
+    c.drawString(50, y_position, "Ergebnisse nach Domänen:")
+    y_position -= 40
+    
     scores = calculate_scores()
     
     for domain in range(1, 9):
+        # Prüfen ob neue Seite benötigt wird
         if y_position < 100:
             c.showPage()
             y_position = height - 50
-            c.setFont("Helvetica", 10)
+            c.setFont("Helvetica", 11)
         
         domain_name = DOMAINS[domain]
         score = scores.get(domain, 0)
         
-        c.drawString(70, y_position, f"Domäne {domain}: {domain_name}")
+        # Domänen-Name
+        c.setFont("Helvetica-Bold", 12)
+        c.drawString(60, y_position, f"Domäne {domain}:")
+        
+        # Domänen-Beschreibung (kürzer falls zu lang)
+        c.setFont("Helvetica", 11)
+        if len(domain_name) > 40:
+            # Bei langen Namen auf zwei Zeilen aufteilen
+            words = domain_name.split()
+            line1 = " ".join(words[:len(words)//2])
+            line2 = " ".join(words[len(words)//2:])
+            c.drawString(60, y_position - 15, line1)
+            c.drawString(60, y_position - 30, line2)
+            text_height = 45
+        else:
+            c.drawString(60, y_position - 15, domain_name)
+            text_height = 30
+        
+        # Score
+        c.setFont("Helvetica-Bold", 12)
         c.drawString(400, y_position, f"{score:.2f}/5")
         
-        # Visualisierung
+        # Visualisierung - Balkendiagramm
         bar_width = 200
-        bar_height = 8
-        fill_width = (score / 5) * bar_width
-        c.rect(200, y_position - 5, bar_width, bar_height)
-        c.rect(200, y_position - 5, fill_width, bar_height, fill=1)
+        bar_height = 12
+        bar_x = 180
+        bar_y = y_position - 10
         
-        y_position -= 25
+        # Hintergrund (grau)
+        c.setFillColorRGB(0.9, 0.9, 0.9)
+        c.rect(bar_x, bar_y, bar_width, bar_height, fill=1, stroke=0)
+        
+        # Vordergrund (blau) basierend auf Score
+        fill_width = (score / 5) * bar_width
+        c.setFillColorRGB(0.2, 0.4, 0.8)
+        c.rect(bar_x, bar_y, fill_width, bar_height, fill=1, stroke=0)
+        
+        # Rahmen
+        c.setFillColorRGB(0, 0, 0)
+        c.rect(bar_x, bar_y, bar_width, bar_height, fill=0, stroke=1)
+        
+        # Nächste Position mit ausreichend Abstand
+        y_position -= (text_height + 20)
     
-    # Gesamtscore
+    # Gesamtscore auf neuer Seite oder mit Abstand
+    if y_position < 150:
+        c.showPage()
+        y_position = height - 100
+    
+    c.setFont("Helvetica-Bold", 14)
+    c.drawString(60, y_position, "Zusammenfassung:")
+    
     if scores:
         total_avg = sum(scores.values()) / len(scores) if scores else 0
-        c.setFont("Helvetica-Bold", 12)
-        c.drawString(70, y_position - 30, f"Gesamtdurchschnitt: {total_avg:.2f}/5")
+        c.setFont("Helvetica-Bold", 16)
+        c.drawString(60, y_position - 40, f"Gesamtdurchschnitt: {total_avg:.2f}/5")
+        
+        # Gesamt-Balken
+        total_bar_width = 250
+        total_bar_height = 15
+        total_bar_x = 60
+        total_bar_y = y_position - 70
+        
+        # Hintergrund
+        c.setFillColorRGB(0.9, 0.9, 0.9)
+        c.rect(total_bar_x, total_bar_y, total_bar_width, total_bar_height, fill=1, stroke=0)
+        
+        # Vordergrund
+        total_fill_width = (total_avg / 5) * total_bar_width
+        c.setFillColorRGB(0.1, 0.6, 0.3)  # Grün für Gesamtscore
+        c.rect(total_bar_x, total_bar_y, total_fill_width, total_bar_height, fill=1, stroke=0)
+        
+        # Rahmen
+        c.setFillColorRGB(0, 0, 0)
+        c.rect(total_bar_x, total_bar_y, total_bar_width, total_bar_height, fill=0, stroke=1)
     
     c.save()
     buffer.seek(0)
