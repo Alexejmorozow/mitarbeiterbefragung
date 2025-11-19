@@ -180,7 +180,7 @@ QUESTIONS = {
         "Systeme sind logisch und intuitiv bedienbar."
     ],
     (6, 3): [
-        "Es existieren klare SOPs und Checklisten.",
+        "Es bestehen klare und verständliche Checklisten oder Arbeitsabläufe, die jederzeit leicht auffindbar sind.",
         "Standards werden im Alltag angewendet."
     ],
     (6, 4): [
@@ -225,6 +225,14 @@ QUESTIONS = {
     ]
 }
 
+# Farbschema: Minzgrün, Anthrazit, Weiss
+COLORS = {
+    "mint": "#98FB98",      # Hell Minzgrün
+    "anthrazit": "#2F4F4F", # Anthrazit
+    "white": "#FFFFFF",     # Weiss
+    "light_gray": "#F8F9FA" # Hellgrau für Hintergründe
+}
+
 def initialize_session():
     """Initialisiert die Session State Variablen"""
     if 'current_step' not in st.session_state:
@@ -234,9 +242,74 @@ def initialize_session():
     if 'answers' not in st.session_state:
         st.session_state.answers = {}
 
+def apply_custom_styles():
+    """Wendet das benutzerdefinierte Farbschema an"""
+    st.markdown(f"""
+    <style>
+    /* Hauptfarben */
+    .main-header {{
+        color: {COLORS['anthrazit']};
+        border-bottom: 2px solid {COLORS['mint']};
+        padding-bottom: 10px;
+    }}
+    
+    /* Buttons */
+    .stButton>button {{
+        background-color: {COLORS['mint']};
+        color: {COLORS['anthrazit']};
+        border: none;
+        border-radius: 8px;
+        padding: 10px 20px;
+        font-weight: 500;
+    }}
+    
+    .stButton>button:hover {{
+        background-color: {COLORS['anthrazit']};
+        color: {COLORS['white']};
+    }}
+    
+    /* Progress Bar */
+    .stProgress > div > div > div {{
+        background-color: {COLORS['mint']};
+    }}
+    
+    /* Radio Buttons */
+    .stRadio > div {{
+        background-color: {COLORS['light_gray']};
+        padding: 15px;
+        border-radius: 8px;
+        border-left: 4px solid {COLORS['mint']};
+    }}
+    
+    /* Selectbox */
+    .stSelectbox > div > div {{
+        border: 1px solid {COLORS['anthrazit']};
+        border-radius: 6px;
+    }}
+    
+    /* Erfolgsmeldung */
+    .stSuccess {{
+        background-color: {COLORS['mint']}30;
+        border: 1px solid {COLORS['mint']};
+        border-radius: 8px;
+        padding: 15px;
+    }}
+    
+    /* Info Box */
+    .stInfo {{
+        background-color: {COLORS['light_gray']};
+        border: 1px solid {COLORS['anthrazit']}30;
+        border-radius: 8px;
+        border-left: 4px solid {COLORS['anthrazit']};
+    }}
+    </style>
+    """, unsafe_allow_html=True)
+
 def render_wg_selection():
     """WG Auswahl Schritt"""
+    st.markdown('<div class="main-header">', unsafe_allow_html=True)
     st.title("🏠 Mitarbeiterbefragung Hausverbund A")
+    st.markdown('</div>', unsafe_allow_html=True)
     
     st.markdown("""
     Im Mai 2025 fand die kantonale Personalbefragung der Institutionen für Menschen mit Behinderungen statt. 
@@ -274,7 +347,10 @@ def render_wg_selection():
 
 def render_survey():
     """Haupt-Befragung mit allen Fragen"""
+    st.markdown('<div class="main-header">', unsafe_allow_html=True)
     st.title("📝 Mitarbeiterbefragung")
+    st.markdown('</div>', unsafe_allow_html=True)
+    
     st.write(f"**Wohngruppe:** {st.session_state.wg_selected}")
     
     # Aktuelle unbeantwortete Frage finden
@@ -368,116 +444,128 @@ def calculate_scores():
     return avg_scores
 
 def create_pdf_report():
-    """Erstellt einen PDF-Report mit den Ergebnissen - verbessertes Layout"""
+    """Erstellt einen PDF-Report mit den Ergebnissen - verbessertes Layout mit mehr Abstand"""
     buffer = io.BytesIO()
     c = canvas.Canvas(buffer, pagesize=A4)
     width, height = A4
     
-    # Titel
-    c.setFont("Helvetica-Bold", 18)
-    c.drawString(50, height - 50, "Mitarbeiterbefragung - Ergebnisbericht")
+    # Titel mit Farbe
+    c.setFillColorRGB(0.4, 0.6, 0.4)  # Minzgrün
+    c.setFont("Helvetica-Bold", 20)
+    c.drawString(50, height - 60, "Mitarbeiterbefragung - Ergebnisbericht")
     
     # Metadaten
+    c.setFillColorRGB(0.2, 0.2, 0.2)  # Anthrazit
     c.setFont("Helvetica", 12)
-    c.drawString(50, height - 80, f"Wohngruppe: {st.session_state.wg_selected}")
-    c.drawString(50, height - 100, f"Datum: {datetime.now().strftime('%d.%m.%Y')}")
-    c.drawString(50, height - 120, "Hinweis: Diese Befragung wurde anonym durchgeführt.")
+    c.drawString(50, height - 90, f"Wohngruppe: {st.session_state.wg_selected}")
+    c.drawString(50, height - 110, f"Datum: {datetime.now().strftime('%d.%m.%Y')}")
+    c.drawString(50, height - 130, "Hinweis: Diese Befragung wurde anonym durchgeführt.")
     
     # Abstand
-    y_position = height - 160
+    y_position = height - 170
     
     # Überschrift für Ergebnisse
+    c.setFillColorRGB(0.4, 0.6, 0.4)  # Minzgrün
     c.setFont("Helvetica-Bold", 16)
     c.drawString(50, y_position, "Ergebnisse nach Domänen:")
-    y_position -= 40
+    y_position -= 50  # Mehr Abstand
     
     scores = calculate_scores()
     
     for domain in range(1, 9):
         # Prüfen ob neue Seite benötigt wird
-        if y_position < 100:
+        if y_position < 120:  # Höhere Grenze für mehr Abstand
             c.showPage()
-            y_position = height - 50
+            y_position = height - 60
             c.setFont("Helvetica", 11)
         
         domain_name = DOMAINS[domain]
         score = scores.get(domain, 0)
         
         # Domänen-Name
-        c.setFont("Helvetica-Bold", 12)
+        c.setFillColorRGB(0.2, 0.2, 0.2)  # Anthrazit
+        c.setFont("Helvetica-Bold", 13)
         c.drawString(60, y_position, f"Domäne {domain}:")
         
-        # Domänen-Beschreibung (kürzer falls zu lang)
+        # Domänen-Beschreibung
         c.setFont("Helvetica", 11)
         if len(domain_name) > 40:
             # Bei langen Namen auf zwei Zeilen aufteilen
             words = domain_name.split()
             line1 = " ".join(words[:len(words)//2])
             line2 = " ".join(words[len(words)//2:])
-            c.drawString(60, y_position - 15, line1)
-            c.drawString(60, y_position - 30, line2)
-            text_height = 45
+            c.drawString(60, y_position - 18, line1)
+            c.drawString(60, y_position - 36, line2)
+            text_height = 54
         else:
-            c.drawString(60, y_position - 15, domain_name)
-            text_height = 30
+            c.drawString(60, y_position - 18, domain_name)
+            text_height = 36
         
         # Score
         c.setFont("Helvetica-Bold", 12)
         c.drawString(400, y_position, f"{score:.2f}/5")
         
-        # Visualisierung - Balkendiagramm
+        # Visualisierung - Balkendiagramm mit Farben
         bar_width = 200
-        bar_height = 12
+        bar_height = 14
         bar_x = 180
-        bar_y = y_position - 10
+        bar_y = y_position - 12
         
-        # Hintergrund (grau)
-        c.setFillColorRGB(0.9, 0.9, 0.9)
+        # Hintergrund (hellgrau)
+        c.setFillColorRGB(0.95, 0.95, 0.95)
         c.rect(bar_x, bar_y, bar_width, bar_height, fill=1, stroke=0)
         
-        # Vordergrund (blau) basierend auf Score
+        # Vordergrund (minzgrün) basierend auf Score
         fill_width = (score / 5) * bar_width
-        c.setFillColorRGB(0.2, 0.4, 0.8)
+        c.setFillColorRGB(0.6, 0.98, 0.6)  # Helleres Minzgrün
         c.rect(bar_x, bar_y, fill_width, bar_height, fill=1, stroke=0)
         
-        # Rahmen
-        c.setFillColorRGB(0, 0, 0)
+        # Rahmen (anthrazit)
+        c.setFillColorRGB(0.2, 0.2, 0.2)
         c.rect(bar_x, bar_y, bar_width, bar_height, fill=0, stroke=1)
         
-        # Nächste Position mit ausreichend Abstand
-        y_position -= (text_height + 20)
+        # Nächste Position mit mehr Abstand
+        y_position -= (text_height + 35)  # Mehr Abstand zwischen Domänen
     
     # Gesamtscore auf neuer Seite oder mit Abstand
-    if y_position < 150:
+    if y_position < 180:  # Mehr Platz für Zusammenfassung
         c.showPage()
         y_position = height - 100
     
-    c.setFont("Helvetica-Bold", 14)
+    c.setFillColorRGB(0.4, 0.6, 0.4)  # Minzgrün
+    c.setFont("Helvetica-Bold", 16)
     c.drawString(60, y_position, "Zusammenfassung:")
     
     if scores:
         total_avg = sum(scores.values()) / len(scores) if scores else 0
-        c.setFont("Helvetica-Bold", 16)
-        c.drawString(60, y_position - 40, f"Gesamtdurchschnitt: {total_avg:.2f}/5")
+        
+        y_position -= 50
+        c.setFillColorRGB(0.2, 0.2, 0.2)  # Anthrazit
+        c.setFont("Helvetica-Bold", 18)
+        c.drawString(60, y_position, f"Gesamtdurchschnitt: {total_avg:.2f}/5")
         
         # Gesamt-Balken
         total_bar_width = 250
-        total_bar_height = 15
+        total_bar_height = 18
         total_bar_x = 60
-        total_bar_y = y_position - 70
+        total_bar_y = y_position - 40
         
         # Hintergrund
-        c.setFillColorRGB(0.9, 0.9, 0.9)
+        c.setFillColorRGB(0.95, 0.95, 0.95)
         c.rect(total_bar_x, total_bar_y, total_bar_width, total_bar_height, fill=1, stroke=0)
         
         # Vordergrund
         total_fill_width = (total_avg / 5) * total_bar_width
-        c.setFillColorRGB(0.1, 0.6, 0.3)  # Grün für Gesamtscore
+        c.setFillColorRGB(0.4, 0.8, 0.4)  # Mittleres Minzgrün
         c.rect(total_bar_x, total_bar_y, total_fill_width, total_bar_height, fill=1, stroke=0)
         
         # Rahmen
-        c.setFillColorRGB(0, 0, 0)
+        c.setFillColorRGB(0.2, 0.2, 0.2)
         c.rect(total_bar_x, total_bar_y, total_bar_width, total_bar_height, fill=0, stroke=1)
+        
+        # Legende
+        c.setFont("Helvetica", 10)
+        c.drawString(60, total_bar_y - 25, "1 = Trifft gar nicht zu | 3 = Teils/teils | 5 = Trifft voll zu")
     
     c.save()
     buffer.seek(0)
@@ -485,7 +573,10 @@ def create_pdf_report():
 
 def render_results():
     """Zeigt die Ergebnisse und PDF-Download an"""
+    st.markdown('<div class="main-header">', unsafe_allow_html=True)
     st.title("✅ Befragung abgeschlossen!")
+    st.markdown('</div>', unsafe_allow_html=True)
+    
     st.success("Vielen Dank für deine Teilnahme an der Befragung!")
     
     st.subheader("Zusammenfassung deiner Antworten")
@@ -524,6 +615,9 @@ def main():
         layout="centered",
         initial_sidebar_state="collapsed"
     )
+    
+    # Custom Styles anwenden
+    apply_custom_styles()
     
     initialize_session()
     
