@@ -281,19 +281,19 @@ def apply_custom_styles():
         background-color: {COLORS['light_mint']};
     }}
     
-    /* Progress Bar - Clean und ohne doppelte Container */
-    [data-testid="stProgress"] > div > div {{
-        background-color: {COLORS['light_gray']};
+    /* Progress Bar - Korrigiert für moderne Streamlit-Versionen */
+    /* Hintergrund der Progressbar */
+    [data-testid="stProgress"] > div > div > div:first-child {{
+        background-color: {COLORS['light_gray']} !important;
         border-radius: 10px;
         height: 20px;
-        padding: 0;
     }}
-    
-    [data-testid="stProgress"] > div > div > div {{
-        background-color: {COLORS['dark_green']};
+
+    /* Füllung */
+    [data-testid="stProgress"] div[data-testid="stProgressBar"] {{
+        background-color: {COLORS['dark_green']} !important;
         border-radius: 10px;
-        height: 100%;
-        margin: 0;
+        height: 20px;
     }}
     
     /* Radio Buttons und andere Container */
@@ -421,7 +421,7 @@ def render_wg_selection():
     Im Mai 2025 fand die kantonale Personalbefragung der Institutionen für Menschen mit Behinderungen statt. 
     Die Ergebnisse für unseren Bereich waren insgesamt erfreulich und haben sowohl Stärken als auch Entwicklungsbereiche aufgezeigt.
 
-    **Um diese Ergebnisse besser zu verstehen**, führen wir nun eine vertiefte Befragung in unserem **Hausverbund A** durch. 
+    **Um diese Ergebnisse besser zu verstehen**, führen wir nun eine vertiefe Befragung in unserem **Hausverbund A** durch. 
     Wir möchten genauer nachvollziehen:
     - Was hinter den positiven Rückmeldungen steht  
     - Wo die Ursachen für kritischere Bewertungen liegen
