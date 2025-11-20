@@ -7,13 +7,6 @@ from reportlab.lib.pagesizes import A4
 from reportlab.platypus import Table, TableStyle
 from reportlab.lib import colors
 import io
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.base import MIMEBase
-from email.mime.text import MIMEText
-from email import encoders
-import ssl
-import os
 
 # Konfiguration
 WG_OPTIONS = [
@@ -136,7 +129,7 @@ QUESTIONS = {
     ],
     (3, 3): [
         "Zuständigkeiten und Verantwortungen sind klar geregelt.",
-        "Jeder weiss, was zu tun ist."
+        "Jeder weiss, what zu tun ist."
     ],
     (3, 4): [
         "Konflikte werden offen angesprochen.",
@@ -234,39 +227,6 @@ QUESTIONS = {
     ]
 }
 
-# SICHERE Email Konfiguration - GMAIL mit Streamlit Secrets
-try:
-    EMAIL_CONFIG = {
-        "smtp_server": st.secrets["email"]["smtp_server"],
-        "smtp_port": st.secrets["email"]["smtp_port"],
-        "sender_email": st.secrets["email"]["sender_email"],
-        "sender_password": st.secrets["email"]["sender_password"],
-    }
-    EMAIL_CONFIGURED = True
-except (KeyError, FileNotFoundError):
-    st.error("⚠️ Email-Konfiguration nicht gefunden. Bitte secrets.toml prüfen.")
-    EMAIL_CONFIGURED = False
-    EMAIL_CONFIG = {
-        "smtp_server": "smtp.gmail.com",
-        "smtp_port": 587,
-        "sender_email": "",
-        "sender_password": "",
-    }
-
-# Email-Adressen der Abteilungsleitungen pro Abteilung
-WG_LEADER_EMAILS = {
-    "Spezialangebot": "leiter.spezialangebot@domain.ch",
-    "WG Fliegenpilz": "leiter.fliegenpilz@domain.ch", 
-    "WG Kristall": "leiter.kristall@domain.ch",
-    "WG Alphorn": "leiter.alphorn@domain.ch",
-    "WG Steinbock": "leiter.steinbock@domain.ch",
-    "WG Alpenblick": "leiter.alpenblick@domain.ch"
-}
-
-# Testmodus - Alle Emails an Test-Adresse umleiten
-TEST_MODE = True
-TEST_EMAIL = "schwarzetanne@hotmail.com"
-
 # Farbschema: Matteres Grün, Anthrazit, Weiss
 COLORS = {
     "mint": "#A8D5BA",
@@ -300,25 +260,20 @@ def initialize_session():
         st.session_state.test_data_created = False
 
 def create_test_data():
-    """Erstellt Test-Daten für schnelles Testen der Email-Funktion"""
+    """Erstellt Test-Daten für schnelles Testen"""
     test_answers = {}
     for domain in range(1, 9):
         for subdomain in range(1, 5):
-            # Zufällige Antworten für Testzwecke
             test_answers[(domain, subdomain)] = ["Trifft zu", "Teils/teils"]
-    
     return test_answers
 
 def apply_custom_styles():
     """Wendet das benutzerdefinierte Farbschema an"""
     st.markdown(f"""
     <style>
-    /* Haupt-Hintergrund */
     .stApp {{
         background-color: {COLORS['mint']};
     }}
-    
-    /* Container-Hintergründe anpassen */
     .main .block-container {{
         background-color: {COLORS['white']};
         padding: 2rem;
@@ -327,26 +282,19 @@ def apply_custom_styles():
         margin-top: 1rem;
         margin-bottom: 1rem;
     }}
-    
-    /* Sidebar Hintergrund */
     .css-1d391kg {{
         background-color: {COLORS['light_mint']};
     }}
-    
-    /* Progress Bar */
     [data-testid="stProgress"] > div > div > div:first-child {{
         background-color: {COLORS['light_gray']} !important;
         border-radius: 10px;
         height: 20px;
     }}
-
     [data-testid="stProgress"] div[data-testid="stProgressBar"] {{
         background-color: {COLORS['dark_green']} !important;
         border-radius: 10px;
         height: 20px;
     }}
-    
-    /* Radio Buttons */
     .stRadio > div {{
         background-color: {COLORS['dark_green']};
         color: {COLORS['white']};
@@ -354,24 +302,18 @@ def apply_custom_styles():
         border-radius: 8px;
         border-left: 4px solid {COLORS['mint']};
     }}
-    
     .stRadio label {{
         color: {COLORS['white']} !important;
         font-weight: 500;
     }}
-    
     .stRadio [data-testid="stMarkdownContainer"] p {{
         color: {COLORS['white']} !important;
     }}
-    
-    /* Selectbox */
     .stSelectbox > div > div {{
         background-color: {COLORS['white']};
         border: 1px solid {COLORS['anthrazit']};
         border-radius: 6px;
     }}
-    
-    /* Buttons */
     .stButton>button {{
         background-color: {COLORS['dark_green']};
         color: {COLORS['white']};
@@ -380,20 +322,15 @@ def apply_custom_styles():
         padding: 10px 20px;
         font-weight: 500;
     }}
-    
     .stButton>button:hover {{
         background-color: {COLORS['anthrazit']};
         color: {COLORS['white']};
     }}
-    
-    /* Hauptfarben */
     .main-header {{
         color: {COLORS['anthrazit']};
         border-bottom: 2px solid {COLORS['dark_green']};
         padding-bottom: 10px;
     }}
-    
-    /* Erfolgsmeldung */
     .stSuccess {{
         background-color: {COLORS['dark_green']} !important;
         color: {COLORS['white']} !important;
@@ -401,8 +338,6 @@ def apply_custom_styles():
         border-radius: 8px;
         padding: 15px;
     }}
-    
-    /* Info Box */
     .stInfo {{
         background-color: {COLORS['dark_green']} !important;
         color: {COLORS['white']} !important;
@@ -411,8 +346,6 @@ def apply_custom_styles():
         border-left: 4px solid {COLORS['mint']};
         padding: 15px;
     }}
-    
-    /* Warning Box */
     .stWarning {{
         background-color: {COLORS['dark_green']} !important;
         color: {COLORS['white']} !important;
@@ -420,8 +353,6 @@ def apply_custom_styles():
         border-radius: 8px;
         padding: 15px;
     }}
-    
-    /* Error Box */
     .stError {{
         background-color: #D9534F;
         color: {COLORS['white']} !important;
@@ -429,27 +360,20 @@ def apply_custom_styles():
         border-radius: 8px;
         padding: 15px;
     }}
-    
-    /* Expander */
     .streamlit-expanderHeader {{
         background-color: {COLORS['dark_green']};
         color: {COLORS['white']} !important;
         border: 1px solid {COLORS['mint']};
         border-radius: 8px;
     }}
-    
     .streamlit-expanderContent {{
         background-color: {COLORS['light_gray']};
         border-radius: 0 0 8px 8px;
     }}
-    
-    /* Icons in den Boxen weiss färben */
     .stSuccess svg, .stInfo svg, .stWarning svg {{
         fill: {COLORS['white']} !important;
         color: {COLORS['white']} !important;
     }}
-    
-    /* Markdown Text in den Boxen weiss färben */
     .stSuccess [data-testid="stMarkdownContainer"] p,
     .stInfo [data-testid="stMarkdownContainer"] p,
     .stWarning [data-testid="stMarkdownContainer"] p {{
@@ -458,75 +382,8 @@ def apply_custom_styles():
     </style>
     """, unsafe_allow_html=True)
 
-def get_recipient_email(wg_name):
-    """Gibt die Empfänger-Email basierend auf der Abteilung zurück"""
-    if TEST_MODE:
-        return TEST_EMAIL
-    else:
-        return WG_LEADER_EMAILS.get(wg_name, TEST_EMAIL)
-
-def send_email_with_pdf(pdf_buffer, wg_name):
-    """Sendet den PDF-Bericht per Email an die entsprechende Abteilungsleitung"""
-    
-    if not EMAIL_CONFIGURED:
-        return False, "Email-Konfiguration nicht verfügbar. Bitte secrets.toml prüfen."
-    
-    try:
-        recipient_email = get_recipient_email(wg_name)
-        
-        # Email-Nachricht erstellen
-        msg = MIMEMultipart()
-        msg['From'] = EMAIL_CONFIG["sender_email"]
-        msg['To'] = recipient_email
-        msg['Subject'] = f"Mitarbeiterbefragung Abschluss - {wg_name}"
-        
-        # Email-Text
-        body = f"""
-        Sehr geehrte Abteilungsleitung,
-        
-        soeben wurde eine Mitarbeiterbefragung für Ihre Abteilung abgeschlossen.
-        
-        Details:
-        - Abteilung: {wg_name}
-        - Datum: {datetime.now().strftime('%d.%m.%Y %H:%M')}
-        - Diese Email wurde automatisch generiert.
-        
-        Der ausgefüllte Fragebogen ist als PDF angehängt. Die Ergebnisse können zur weiteren Analyse und für Massnahmenplanungen verwendet werden.
-        
-        Mit freundlichen Grüßen
-        Ihr Befragungssystem Hausverbund A
-        """
-        msg.attach(MIMEText(body, 'plain', 'utf-8'))
-        
-        # PDF als Attachment
-        pdf_attachment = MIMEBase('application', 'octet-stream')
-        pdf_buffer.seek(0)
-        pdf_attachment.set_payload(pdf_buffer.read())
-        encoders.encode_base64(pdf_attachment)
-        pdf_attachment.add_header(
-            'Content-Disposition',
-            f'attachment; filename="Befragung_{wg_name}_{datetime.now().strftime("%Y%m%d_%H%M")}.pdf"'
-        )
-        msg.attach(pdf_attachment)
-        
-        # Email senden mit Gmail
-        context = ssl.create_default_context()
-        with smtplib.SMTP(EMAIL_CONFIG["smtp_server"], EMAIL_CONFIG["smtp_port"]) as server:
-            server.starttls(context=context)
-            server.login(EMAIL_CONFIG["sender_email"], EMAIL_CONFIG["sender_password"])
-            server.send_message(msg)
-            
-        return True, f"✅ Email erfolgreich an {recipient_email} versendet!"
-        
-    except smtplib.SMTPAuthenticationError:
-        return False, "❌ Email-Login fehlgeschlagen. Bitte Anmeldedaten in secrets.toml prüfen."
-    except smtplib.SMTPException as e:
-        return False, f"❌ SMTP-Fehler: {str(e)}"
-    except Exception as e:
-        return False, f"❌ Fehler beim Senden der Email: {str(e)}"
-
 def render_wg_selection():
-    """WG Auswahl Schritt mit Test-Button"""
+    """WG Auswahl Schritt"""
     st.markdown('<div class="main-header">', unsafe_allow_html=True)
     st.title("🏠 Mitarbeiterbefragung Hausverbund A")
     st.markdown('</div>', unsafe_allow_html=True)
@@ -550,32 +407,14 @@ def render_wg_selection():
     Vielen Dank für deine Mitarbeit und die investierte Zeit!
     """)
     
-    # Email-Konfigurations-Status anzeigen
-    if not EMAIL_CONFIGURED:
-        st.error("""
-        ⚠️ **Email nicht konfiguriert**
-        
-        Für den Email-Versand bitte eine `.streamlit/secrets.toml` Datei erstellen mit:
-        ```toml
-        [email]
-        smtp_server = "smtp.gmail.com"
-        smtp_port = 587
-        sender_email = "deine-email@gmail.com"
-        sender_password = "dein-app-passwort"
-        ```
-        """)
-    else:
-        st.success("✅ Email-Konfiguration erfolgreich geladen")
-    
-    # TEST-BUTTON FÜR SCHNELLEN EMAIL-TEST
+    # TEST-BUTTON FÜR SCHNELLEN TEST
     st.write("---")
-    st.subheader("🛠️ Entwickler-Testbereich")
+    st.subheader("🛠️ Testbereich")
     
     col1, col2 = st.columns(2)
     
     with col1:
-        if st.button("🚀 Schnelltest: Email-Funktion prüfen", type="secondary"):
-            # Test-Daten erstellen und direkt zur Ergebnis-Seite springen
+        if st.button("🚀 Schnelltest: Mit Testdaten füllen", type="secondary"):
             st.session_state.answers = create_test_data()
             st.session_state.wg_selected = "WG Fliegenpilz"
             st.session_state.current_step = 'results'
@@ -606,7 +445,7 @@ def render_wg_selection():
         st.rerun()
 
 def render_survey():
-    """Haupt-Befragung mit allen Fragen - OHNE Domänen-Namen"""
+    """Haupt-Befragung mit allen Fragen"""
     st.markdown('<div class="main-header">', unsafe_allow_html=True)
     st.title("📝 Mitarbeiterbefragung")
     st.markdown('</div>', unsafe_allow_html=True)
@@ -624,7 +463,6 @@ def render_survey():
             break
     
     if not current_key:
-        # Alle Fragen beantwortet
         st.session_state.current_step = 'results'
         st.rerun()
         return
@@ -640,7 +478,7 @@ def render_survey():
     st.progress(progress)
     st.write(f"Fortschritt: {completed_questions + 1} von {total_questions} Fragen")
     
-    # Frage anzeigen - OHNE Domänen-Informationen
+    # Frage anzeigen
     st.subheader("Bitte beantworte die folgenden Fragen:")
     
     answers = []
@@ -660,7 +498,6 @@ def render_survey():
     with col1:
         if st.session_state.answers:
             if st.button("← Zurück"):
-                # Letzte Antwort entfernen um zurückzugehen
                 last_key = list(st.session_state.answers.keys())[-1]
                 del st.session_state.answers[last_key]
                 st.rerun()
@@ -693,7 +530,6 @@ def calculate_scores():
             if answer in scoring:
                 domain_scores[domain].append(scoring[answer])
     
-    # Durchschnitt pro Domäne berechnen
     avg_scores = {}
     for domain, scores in domain_scores.items():
         if scores:
@@ -717,13 +553,11 @@ def create_pdf_report():
     c.drawString(50, height - 90, f"Abteilung: {st.session_state.wg_selected}")
     c.drawString(50, height - 110, f"Datum: {datetime.now().strftime('%d.%m.%Y')}")
     
-    # Hinweis für Test-Daten
     if st.session_state.get('test_data_created', False):
         c.drawString(50, height - 130, "Hinweis: Dies ist ein Testbericht mit simulierten Daten")
     else:
         c.drawString(50, height - 130, "Hinweis: Diese Befragung wurde anonym durchgeführt.")
     
-    # Abstand
     y_position = height - 170
     
     # Überschrift für Ergebnisse
@@ -742,7 +576,6 @@ def create_pdf_report():
         score = scores.get(domain, 0)
         interpretation, color = get_interpretation(score)
         
-        # Bereich aufteilen falls zu lang
         if len(domain_name) > 40:
             words = domain_name.split()
             domain_line1 = " ".join(words[:len(words)//2])
@@ -757,24 +590,17 @@ def create_pdf_report():
     
     # Tabellen-Stil
     table.setStyle(TableStyle([
-        # Header
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor(COLORS['mint'])),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.HexColor(COLORS['anthrazit'])),
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
         ('FONTSIZE', (0, 0), (-1, 0), 12),
         ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        
-        # Zellen
         ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
         ('FONTSIZE', (0, 1), (-1, -1), 10),
         ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
         ('TOPPADDING', (0, 0), (-1, -1), 8),
-        
-        # Rahmen
         ('GRID', (0, 0), (-1, -1), 1, colors.HexColor(COLORS['anthrazit'])),
-        
-        # Zeilen-Hintergrund
         ('ROWBACKGROUNDS', (0, 1), (-1, -1), [
             colors.HexColor(COLORS['light_gray']), 
             colors.white
@@ -793,7 +619,7 @@ def create_pdf_report():
         elif interpretation == "Mittel":
             bg_color = colors.HexColor("#E9B44C")
             text_color = colors.black
-        else:  # Verbesserungsbedarf
+        else:
             bg_color = colors.HexColor("#D9534F")
             text_color = colors.white
             
@@ -803,11 +629,9 @@ def create_pdf_report():
             ('FONTNAME', (3, i), (3, i), 'Helvetica-Bold'),
         ]))
     
-    # Tabelle zeichnen
     table.wrapOn(c, width, height)
     table.drawOn(c, 50, y_position - (len(table_data) * 20))
     
-    # Gesamtscore
     y_position_summary = y_position - (len(table_data) * 20) - 60
     
     if scores:
@@ -820,7 +644,6 @@ def create_pdf_report():
         c.setFont("Helvetica-Bold", 14)
         c.drawString(50, y_position_summary - 30, f"Gesamtdurchschnitt: {total_avg:.2f}/5")
         
-        # Legende
         c.setFont("Helvetica", 9)
         c.drawString(50, y_position_summary - 60, "Interpretation: ≥4.2 = Sehr gut | ≥3.6 = Gut | ≥3.0 = Mittel | <3.0 = Verbesserungsbedarf")
         c.drawString(50, y_position_summary - 75, "Skala: 1 = Trifft gar nicht zu | 3 = Teils/teils | 5 = Trifft voll zu")
@@ -830,14 +653,13 @@ def create_pdf_report():
     return buffer
 
 def render_results():
-    """Zeigt die Ergebnisse und PDF-Download/Email-Versand an"""
+    """Zeigt die Ergebnisse und PDF-Download an"""
     st.markdown('<div class="main-header">', unsafe_allow_html=True)
     st.title("✅ Befragung abgeschlossen!")
     st.markdown('</div>', unsafe_allow_html=True)
     
-    # Hinweis für Test-Daten
     if st.session_state.get('test_data_created', False):
-        st.warning("🛠️ **Testmodus** - Dies sind simulierte Daten für den Email-Test")
+        st.warning("🛠️ **Testmodus** - Dies sind simulierte Daten")
     else:
         st.success("Vielen Dank für deine Teilnahme an der Befragung!")
     
@@ -853,50 +675,23 @@ def render_results():
     # PDF erstellen
     pdf_buffer = create_pdf_report()
     
-    st.subheader("Bericht versenden")
+    st.subheader("📊 Bericht herunterladen")
     
-    col1, col2 = st.columns(2)
+    st.download_button(
+        label="📄 PDF Bericht herunterladen",
+        data=pdf_buffer,
+        file_name=f"Befragung_{st.session_state.wg_selected}_{datetime.now().strftime('%Y%m%d')}.pdf",
+        mime="application/pdf",
+        type="primary"
+    )
     
-    with col1:
-        # PDF Download Button
-        st.write("**PDF herunterladen:**")
-        st.download_button(
-            label="📄 PDF Bericht herunterladen",
-            data=pdf_buffer,
-            file_name=f"Befragung_{st.session_state.wg_selected}_{datetime.now().strftime('%Y%m%d')}.pdf",
-            mime="application/pdf"
-        )
-    
-    with col2:
-        # Email Versand Button
-        st.write("**Per Email senden:**")
-        
-        # Anzeige, an wen gesendet wird
-        recipient_email = get_recipient_email(st.session_state.wg_selected)
-        st.info(f"📧 Wird gesendet an: **{recipient_email}**")
-        
-        if TEST_MODE:
-            st.warning("🛠️ **Testmodus aktiv** - Alle Emails gehen an deine Test-Adresse")
-        
-        if st.button("📧 Bericht an Abteilungsleitung senden", type="primary"):
-            if not EMAIL_CONFIGURED:
-                st.error("Email-Konfiguration nicht verfügbar. Bitte secrets.toml erstellen.")
-            else:
-                with st.spinner("Sende Email..."):
-                    success, message = send_email_with_pdf(pdf_buffer, st.session_state.wg_selected)
-                    
-                    if success:
-                        st.success(message)
-                        st.balloons()
-                    else:
-                        st.error(message)
-                        st.info("""
-                        **Troubleshooting für Gmail:**
-                        - Verwende ein App-spezifisches Passwort (nicht dein normales Gmail-Passwort)
-                        - Stelle sicher, dass 2-Faktor-Authentifizierung aktiviert ist
-                        - Prüfe ob "Weniger sichere Apps" aktiviert ist (falls kein App-Passwort)
-                        - Die erste Email könnte im Spam-Ordner landen
-                        """)
+    st.info("""
+    **📋 Nächste Schritte:**
+    - Lade den PDF-Bericht herunter
+    - Drucke ihn aus oder speichere ihn digital
+    - Gib ihn an deine Abteilungsleitung weiter
+    - Der Bericht dient als Grundlage für Team-Besprechungen
+    """)
     
     # Neue Befragung starten
     st.write("---")
@@ -923,12 +718,9 @@ def main():
         initial_sidebar_state="collapsed"
     )
     
-    # Custom Styles anwenden
     apply_custom_styles()
-    
     initialize_session()
     
-    # Routing zwischen den Schritten
     if st.session_state.current_step == 'wg_selection':
         render_wg_selection()
     elif st.session_state.current_step == 'survey':
