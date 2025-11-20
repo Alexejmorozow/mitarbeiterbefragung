@@ -235,10 +235,10 @@ QUESTIONS = {
 
 # Email Konfiguration - WEB.DE
 EMAIL_CONFIG = {
-    "smtp_server": "smtp.web.de",
+    "smtp_server": "smtp.gmail.com",
     "smtp_port": 587,
-    "sender_email": "MitarbeiterbefragungHVA@web.de",
-    "sender_password": "Mitarbeiterbefragung1234",
+    "sender_email": "alexejsworkflow@gmail.com",
+    "sender_password": "dvunswfyuiwxamhg",
 }
 
 # Email-Adressen der Abteilungsleitungen pro Wohngruppe
