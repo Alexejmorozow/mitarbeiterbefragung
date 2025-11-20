@@ -233,9 +233,9 @@ QUESTIONS = {
     ]
 }
 
-# Email Konfiguration
+# Email Konfiguration - LÖSUNG 1: Alternative GMX Server
 EMAIL_CONFIG = {
-    "smtp_server": "mail.gmx.net",
+    "smtp_server": "smtp.gmx.com",  # Alternativer GMX Server
     "smtp_port": 587,
     "sender_email": "mitarbeiterbefragungHVA@gmx.ch",
     "sender_password": "Mitarbeiterbefragung1234",
@@ -284,6 +284,19 @@ def initialize_session():
         st.session_state.wg_selected = None
     if 'answers' not in st.session_state:
         st.session_state.answers = {}
+    if 'test_data_created' not in st.session_state:
+        st.session_state.test_data_created = False
+
+def create_test_data():
+    """Erstellt Test-Daten für schnelles Testen der Email-Funktion"""
+    # Simuliert ausgefüllte Antworten für alle Fragen
+    test_answers = {}
+    for domain in range(1, 9):
+        for subdomain in range(1, 5):
+            # Zufällige Antworten für Testzwecke
+            test_answers[(domain, subdomain)] = ["Trifft zu", "Teils/teils"]
+    
+    return test_answers
 
 def apply_custom_styles():
     """Wendet das benutzerdefinierte Farbschema an"""
@@ -486,7 +499,7 @@ def send_email_with_pdf(pdf_buffer, wg_name):
         )
         msg.attach(pdf_attachment)
         
-        # Email senden
+        # Email senden mit alternativem GMX Server
         context = ssl.create_default_context()
         with smtplib.SMTP(EMAIL_CONFIG["smtp_server"], EMAIL_CONFIG["smtp_port"]) as server:
             server.starttls(context=context)
@@ -499,7 +512,7 @@ def send_email_with_pdf(pdf_buffer, wg_name):
         return False, f"Fehler beim Senden der Email: {str(e)}"
 
 def render_wg_selection():
-    """WG Auswahl Schritt"""
+    """WG Auswahl Schritt mit Test-Button"""
     st.markdown('<div class="main-header">', unsafe_allow_html=True)
     st.title("🏠 Mitarbeiterbefragung Hausverbund A")
     st.markdown('</div>', unsafe_allow_html=True)
@@ -522,6 +535,29 @@ def render_wg_selection():
 
     Vielen Dank für deine Mitarbeit und die investierte Zeit!
     """)
+    
+    # TEST-BUTTON FÜR SCHNELLEN EMAIL-TEST
+    st.write("---")
+    st.subheader("🛠️ Entwickler-Testbereich")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        if st.button("🚀 Schnelltest: Email-Funktion prüfen", type="secondary"):
+            # Test-Daten erstellen und direkt zur Ergebnis-Seite springen
+            st.session_state.answers = create_test_data()
+            st.session_state.wg_selected = "WG Fliegenpilz"  # Beispiel-WG
+            st.session_state.current_step = 'results'
+            st.session_state.test_data_created = True
+            st.rerun()
+    
+    with col2:
+        if st.button("📋 Normale Befragung starten", type="primary"):
+            st.session_state.current_step = 'survey'
+            st.rerun()
+    
+    if st.session_state.get('test_data_created', False):
+        st.success("✅ Test-Daten wurden erstellt! Du wirst zur Ergebnis-Seite weitergeleitet...")
     
     st.subheader("Bitte wähle deine Wohngruppe aus")
     
@@ -650,7 +686,12 @@ def create_pdf_report():
     c.setFont("Helvetica", 12)
     c.drawString(50, height - 90, f"Wohngruppe: {st.session_state.wg_selected}")
     c.drawString(50, height - 110, f"Datum: {datetime.now().strftime('%d.%m.%Y')}")
-    c.drawString(50, height - 130, "Hinweis: Diese Befragung wurde anonym durchgeführt.")
+    
+    # Hinweis für Test-Daten
+    if st.session_state.get('test_data_created', False):
+        c.drawString(50, height - 130, "Hinweis: Dies ist ein Testbericht mit simulierten Daten")
+    else:
+        c.drawString(50, height - 130, "Hinweis: Diese Befragung wurde anonym durchgeführt.")
     
     # Abstand
     y_position = height - 170
@@ -764,7 +805,11 @@ def render_results():
     st.title("✅ Befragung abgeschlossen!")
     st.markdown('</div>', unsafe_allow_html=True)
     
-    st.success("Vielen Dank für deine Teilnahme an der Befragung!")
+    # Hinweis für Test-Daten
+    if st.session_state.get('test_data_created', False):
+        st.warning("🛠️ **Testmodus** - Dies sind simulierte Daten für den Email-Test")
+    else:
+        st.success("Vielen Dank für deine Teilnahme an der Befragung!")
     
     st.subheader("Zusammenfassung deiner Antworten")
     
@@ -819,14 +864,24 @@ def render_results():
                     - Stelle sicher, dass du dich kürzlich im GMX Webinterface eingeloggt hast
                     - Prüfe ob dein GMX Konto aktiv ist
                     - Die erste Email könnte im Spam-Ordner landen
+                    - Probiere alternativen SMTP Server: `mail.gmx.net` oder `smtp.gmx.com`
                     """)
     
     # Neue Befragung starten
     st.write("---")
-    if st.button("🏠 Neue Befragung starten"):
-        for key in list(st.session_state.keys()):
-            del st.session_state[key]
-        st.rerun()
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        if st.button("🔄 Neue Test-Befragung"):
+            st.session_state.answers = create_test_data()
+            st.session_state.test_data_created = True
+            st.rerun()
+    
+    with col2:
+        if st.button("🏠 Neue echte Befragung"):
+            for key in list(st.session_state.keys()):
+                del st.session_state[key]
+            st.rerun()
 
 def main():
     """Hauptfunktion der Anwendung"""
