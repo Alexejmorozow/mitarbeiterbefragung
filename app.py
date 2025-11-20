@@ -7,6 +7,12 @@ from reportlab.lib.pagesizes import A4
 from reportlab.platypus import Table, TableStyle
 from reportlab.lib import colors
 import io
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.base import MIMEBase
+from email.mime.text import MIMEText
+from email import encoders
+import ssl
 
 # Konfiguration
 WG_OPTIONS = [
@@ -227,6 +233,28 @@ QUESTIONS = {
     ]
 }
 
+# Email Konfiguration
+EMAIL_CONFIG = {
+    "smtp_server": "mail.gmx.net",
+    "smtp_port": 587,
+    "sender_email": "mitarbeiterbefragungHVA@gmx.ch",
+    "sender_password": "Mitarbeiterbefragung1234",
+}
+
+# Email-Adressen der Abteilungsleitungen pro Wohngruppe
+WG_LEADER_EMAILS = {
+    "Spezialangebot": "leiter.spezialangebot@domain.ch",
+    "WG Fliegenpilz": "leiter.fliegenpilz@domain.ch", 
+    "WG Kristall": "leiter.kristall@domain.ch",
+    "WG Alphorn": "leiter.alphorn@domain.ch",
+    "WG Steinbock": "leiter.steinbock@domain.ch",
+    "WG Alpenblick": "leiter.alpenblick@domain.ch"
+}
+
+# Für den Test: Alle Emails an deine Adresse umleiten
+TEST_MODE = True
+TEST_EMAIL = "schwarzetanne@hotmail.com"
+
 # Neues Farbschema: Matteres Grün, Anthrazit, Weiss
 COLORS = {
     "mint": "#A8D5BA",      # Matteres Minzgrün (nicht mehr giftig)
@@ -411,6 +439,65 @@ def apply_custom_styles():
     </style>
     """, unsafe_allow_html=True)
 
+def get_recipient_email(wg_name):
+    """Gibt die Empfänger-Email basierend auf der Wohngruppe zurück"""
+    if TEST_MODE:
+        return TEST_EMAIL
+    else:
+        return WG_LEADER_EMAILS.get(wg_name, TEST_EMAIL)
+
+def send_email_with_pdf(pdf_buffer, wg_name):
+    """Sendet den PDF-Bericht per Email an die entsprechende Abteilungsleitung"""
+    try:
+        recipient_email = get_recipient_email(wg_name)
+        
+        # Email-Nachricht erstellen
+        msg = MIMEMultipart()
+        msg['From'] = EMAIL_CONFIG["sender_email"]
+        msg['To'] = recipient_email
+        msg['Subject'] = f"Mitarbeiterbefragung Abschluss - {wg_name}"
+        
+        # Email-Text
+        body = f"""
+        Sehr geehrte Abteilungsleitung,
+        
+        soeben wurde eine Mitarbeiterbefragung für Ihre Wohngruppe abgeschlossen.
+        
+        Details:
+        - Wohngruppe: {wg_name}
+        - Datum: {datetime.now().strftime('%d.%m.%Y %H:%M')}
+        - Diese Email wurde automatisch generiert.
+        
+        Der ausgefüllte Fragebogen ist als PDF angehängt. Die Ergebnisse können zur weiteren Analyse und für Massnahmenplanungen verwendet werden.
+        
+        Mit freundlichen Grüßen
+        Ihr Befragungssystem Hausverbund A
+        """
+        msg.attach(MIMEText(body, 'plain', 'utf-8'))
+        
+        # PDF als Attachment
+        pdf_attachment = MIMEBase('application', 'octet-stream')
+        pdf_buffer.seek(0)
+        pdf_attachment.set_payload(pdf_buffer.read())
+        encoders.encode_base64(pdf_attachment)
+        pdf_attachment.add_header(
+            'Content-Disposition',
+            f'attachment; filename="Befragung_{wg_name}_{datetime.now().strftime("%Y%m%d_%H%M")}.pdf"'
+        )
+        msg.attach(pdf_attachment)
+        
+        # Email senden
+        context = ssl.create_default_context()
+        with smtplib.SMTP(EMAIL_CONFIG["smtp_server"], EMAIL_CONFIG["smtp_port"]) as server:
+            server.starttls(context=context)
+            server.login(EMAIL_CONFIG["sender_email"], EMAIL_CONFIG["sender_password"])
+            server.send_message(msg)
+            
+        return True, f"Email erfolgreich an {recipient_email} versendet!"
+        
+    except Exception as e:
+        return False, f"Fehler beim Senden der Email: {str(e)}"
+
 def render_wg_selection():
     """WG Auswahl Schritt"""
     st.markdown('<div class="main-header">', unsafe_allow_html=True)
@@ -421,7 +508,7 @@ def render_wg_selection():
     Im Mai 2025 fand die kantonale Personalbefragung der Institutionen für Menschen mit Behinderungen statt. 
     Die Ergebnisse für unseren Bereich waren insgesamt erfreulich und haben sowohl Stärken als auch Entwicklungsbereiche aufgezeigt.
 
-    **Um diese Ergebnisse besser zu verstehen**, führen wir nun eine vertiefe Befragung in unserem **Hausverbund A** durch. 
+    **Um diese Ergebnisse besser zu verstehen**, führen wir nun eine vertiefte Befragung in unserem **Hausverbund A** durch. 
     Wir möchten genauer nachvollziehen:
     - Was hinter den positiven Rückmeldungen steht  
     - Wo die Ursachen für kritischere Bewertungen liegen
@@ -672,7 +759,7 @@ def create_pdf_report():
     return buffer
 
 def render_results():
-    """Zeigt die Ergebnisse und PDF-Download an"""
+    """Zeigt die Ergebnisse und PDF-Download/Email-Versand an"""
     st.markdown('<div class="main-header">', unsafe_allow_html=True)
     st.title("✅ Befragung abgeschlossen!")
     st.markdown('</div>', unsafe_allow_html=True)
@@ -688,18 +775,51 @@ def render_results():
         st.write(f"**{DOMAINS[domain]}:** {score:.2f}/5 Punkte - *{interpretation}*")
         st.progress(score / 5)
     
-    # PDF Download
-    st.subheader("PDF-Bericht")
-    st.write("Du kannst hier eine Zusammenfassung deiner Antworten als PDF herunterladen:")
-    
+    # PDF erstellen
     pdf_buffer = create_pdf_report()
     
-    st.download_button(
-        label="📄 PDF Bericht herunterladen",
-        data=pdf_buffer,
-        file_name=f"Befragung_{st.session_state.wg_selected}_{datetime.now().strftime('%Y%m%d')}.pdf",
-        mime="application/pdf"
-    )
+    st.subheader("Bericht versenden")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        # PDF Download Button
+        st.write("**PDF herunterladen:**")
+        st.download_button(
+            label="📄 PDF Bericht herunterladen",
+            data=pdf_buffer,
+            file_name=f"Befragung_{st.session_state.wg_selected}_{datetime.now().strftime('%Y%m%d')}.pdf",
+            mime="application/pdf"
+        )
+    
+    with col2:
+        # Email Versand Button
+        st.write("**Per Email senden:**")
+        
+        # Anzeige, an wen gesendet wird
+        recipient_email = get_recipient_email(st.session_state.wg_selected)
+        st.info(f"📧 Wird gesendet an: **{recipient_email}**")
+        
+        if TEST_MODE:
+            st.warning("🛠️ **Testmodus aktiv** - Alle Emails gehen an deine Test-Adresse")
+        
+        if st.button("📧 Bericht an Abteilungsleitung senden", type="primary"):
+            with st.spinner("Sende Email..."):
+                success, message = send_email_with_pdf(pdf_buffer, st.session_state.wg_selected)
+                
+                if success:
+                    st.success(message)
+                    # Erfolgs-Icon anzeigen
+                    st.balloons()
+                else:
+                    st.error(message)
+                    st.info("""
+                    **Troubleshooting für GMX:**
+                    - Prüfe dein GMX-Passwort
+                    - Stelle sicher, dass du dich kürzlich im GMX Webinterface eingeloggt hast
+                    - Prüfe ob dein GMX Konto aktiv ist
+                    - Die erste Email könnte im Spam-Ordner landen
+                    """)
     
     # Neue Befragung starten
     st.write("---")
