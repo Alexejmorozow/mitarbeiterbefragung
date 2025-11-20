@@ -156,7 +156,7 @@ QUESTIONS = {
     
     # DOMÄNE 5 – Gesundheit, körperliche & psychische Belastung
     (5, 1): [
-        "Die körperliche Belastung ist langfristik tragbar.",
+        "Die körperliche Belastung ist langfristig tragbar.",
         "Ich kann meinen Körper im Alltag schonen, ohne Qualität zu verlieren."
     ],
     (5, 2): [
@@ -281,6 +281,27 @@ def apply_custom_styles():
         background-color: {COLORS['light_mint']};
     }}
     
+    /* Progress Bar - Komplett überarbeitet */
+    .stProgress > div {{
+        background-color: {COLORS['light_gray']};
+        border-radius: 10px;
+        border: none;
+        height: 12px;
+    }}
+    
+    .stProgress > div > div > div {{
+        background-color: {COLORS['dark_green']};
+        border-radius: 10px;
+        border: none;
+    }}
+    
+    /* Progress Bar Container ohne weissen Rand */
+    div[data-testid="stProgress"] > div {{
+        background-color: {COLORS['light_gray']};
+        border-radius: 10px;
+        border: none;
+    }}
+    
     /* Radio Buttons und andere Container */
     .stRadio > div {{
         background-color: {COLORS['dark_green']};
@@ -306,15 +327,6 @@ def apply_custom_styles():
         background-color: {COLORS['white']};
         border: 1px solid {COLORS['anthrazit']};
         border-radius: 6px;
-    }}
-    
-    /* Progress Bar Container */
-    .stProgress > div {{
-        background-color: {COLORS['light_gray']};
-    }}
-    
-    .stProgress > div > div > div {{
-        background-color: {COLORS['dark_green']};
     }}
     
     /* Buttons */
