@@ -346,10 +346,10 @@ def render_wg_selection():
     Vielen Dank für deine Mitarbeit und die investierte Zeit!
     """)
     
-    st.subheader("Bitte wähle deine Wohngruppe aus")
+    st.subheader("Bitte wähle deine Abteilung aus")
     
     selected_wg = st.selectbox(
-        "Wohngruppe:",
+        "Abteilung:",
         WG_OPTIONS,
         key="wg_select"
     )
@@ -367,7 +367,7 @@ def render_survey():
     st.title("📝 Mitarbeiterbefragung")
     st.markdown('</div>', unsafe_allow_html=True)
     
-    st.write(f"**Wohngruppe:** {st.session_state.wg_selected}")
+    st.write(f"**Abteilung:** {st.session_state.wg_selected}")
     
     # Aktuelle unbeantwortete Frage finden
     current_key = None
@@ -471,7 +471,7 @@ def create_pdf_report():
     
     # Metadaten
     c.setFont("Helvetica", 12)
-    c.drawString(50, height - 90, f"Wohngruppe: {st.session_state.wg_selected}")
+    c.drawString(50, height - 90, f"Abteilung: {st.session_state.wg_selected}")
     c.drawString(50, height - 110, f"Datum: {datetime.now().strftime('%d.%m.%Y')}")
     c.drawString(50, height - 130, "Hinweis: Diese Befragung wurde anonym durchgeführt.")
     
