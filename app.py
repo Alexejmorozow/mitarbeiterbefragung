@@ -281,19 +281,19 @@ def apply_custom_styles():
         background-color: {COLORS['light_mint']};
     }}
     
-    /* Progress Bar - Vereinfachte Version ohne doppelten Container */
+    /* Progress Bar - Clean und ohne doppelte Container */
     [data-testid="stProgress"] > div > div {{
-        background-color: {COLORS['white']};
+        background-color: {COLORS['light_gray']};
         border-radius: 10px;
-        border: 2px solid {COLORS['dark_green']};
         height: 20px;
+        padding: 0;
     }}
     
     [data-testid="stProgress"] > div > div > div {{
         background-color: {COLORS['dark_green']};
-        border-radius: 8px;
-        height: 16px;
-        margin: 2px;
+        border-radius: 10px;
+        height: 100%;
+        margin: 0;
     }}
     
     /* Radio Buttons und andere Container */
