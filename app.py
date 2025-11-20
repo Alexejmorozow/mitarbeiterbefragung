@@ -233,11 +233,11 @@ QUESTIONS = {
     ]
 }
 
-# Email Konfiguration - LÖSUNG 1: Alternative GMX Server
+# Email Konfiguration - WEB.DE
 EMAIL_CONFIG = {
-    "smtp_server": "smtp.gmx.com",  # Alternativer GMX Server
+    "smtp_server": "smtp.web.de",
     "smtp_port": 587,
-    "sender_email": "mitarbeiterbefragungHVA@gmx.ch",
+    "sender_email": "MitarbeiterbefragungHVA@web.de",
     "sender_password": "Mitarbeiterbefragung1234",
 }
 
@@ -499,7 +499,7 @@ def send_email_with_pdf(pdf_buffer, wg_name):
         )
         msg.attach(pdf_attachment)
         
-        # Email senden mit alternativem GMX Server
+        # Email senden mit WEB.DE
         context = ssl.create_default_context()
         with smtplib.SMTP(EMAIL_CONFIG["smtp_server"], EMAIL_CONFIG["smtp_port"]) as server:
             server.starttls(context=context)
@@ -859,12 +859,11 @@ def render_results():
                 else:
                     st.error(message)
                     st.info("""
-                    **Troubleshooting für GMX:**
-                    - Prüfe dein GMX-Passwort
-                    - Stelle sicher, dass du dich kürzlich im GMX Webinterface eingeloggt hast
-                    - Prüfe ob dein GMX Konto aktiv ist
+                    **Troubleshooting für WEB.DE:**
+                    - Prüfe ob POP3/IMAP in den WEB.DE Einstellungen aktiviert ist
+                    - Stelle sicher, dass du dich kürzlich im WEB.DE Webinterface eingeloggt hast
+                    - Prüfe dein Passwort
                     - Die erste Email könnte im Spam-Ordner landen
-                    - Probiere alternativen SMTP Server: `mail.gmx.net` oder `smtp.gmx.com`
                     """)
     
     # Neue Befragung starten
