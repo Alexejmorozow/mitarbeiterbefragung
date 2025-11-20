@@ -241,7 +241,7 @@ EMAIL_CONFIG = {
     "sender_password": "dvunswfyuiwxamhg",
 }
 
-# Email-Adressen der Abteilungsleitungen pro Wohngruppe
+# Email-Adressen der Abteilungsleitungen pro Abteilung
 WG_LEADER_EMAILS = {
     "Spezialangebot": "leiter.spezialangebot@domain.ch",
     "WG Fliegenpilz": "leiter.fliegenpilz@domain.ch", 
@@ -453,7 +453,7 @@ def apply_custom_styles():
     """, unsafe_allow_html=True)
 
 def get_recipient_email(wg_name):
-    """Gibt die Empfänger-Email basierend auf der Wohngruppe zurück"""
+    """Gibt die Empfänger-Email basierend auf der Abteilung zurück"""
     if TEST_MODE:
         return TEST_EMAIL
     else:
@@ -474,10 +474,10 @@ def send_email_with_pdf(pdf_buffer, wg_name):
         body = f"""
         Sehr geehrte Abteilungsleitung,
         
-        soeben wurde eine Mitarbeiterbefragung für Ihre Wohngruppe abgeschlossen.
+        soeben wurde eine Mitarbeiterbefragung für Ihre Abteilung abgeschlossen.
         
         Details:
-        - Wohngruppe: {wg_name}
+        - Abteilung: {wg_name}
         - Datum: {datetime.now().strftime('%d.%m.%Y %H:%M')}
         - Diese Email wurde automatisch generiert.
         
@@ -559,10 +559,10 @@ def render_wg_selection():
     if st.session_state.get('test_data_created', False):
         st.success("✅ Test-Daten wurden erstellt! Du wirst zur Ergebnis-Seite weitergeleitet...")
     
-    st.subheader("Bitte wähle deine Wohngruppe aus")
+    st.subheader("Bitte wähle deine Abteilung aus")
     
     selected_wg = st.selectbox(
-        "Wohngruppe:",
+        "Abteilung:",
         WG_OPTIONS,
         key="wg_select"
     )
@@ -580,7 +580,7 @@ def render_survey():
     st.title("📝 Mitarbeiterbefragung")
     st.markdown('</div>', unsafe_allow_html=True)
     
-    st.write(f"**Wohngruppe:** {st.session_state.wg_selected}")
+    st.write(f"**Abteilung:** {st.session_state.wg_selected}")
     
     # Aktuelle unbeantwortete Frage finden
     current_key = None
@@ -684,7 +684,7 @@ def create_pdf_report():
     
     # Metadaten
     c.setFont("Helvetica", 12)
-    c.drawString(50, height - 90, f"Wohngruppe: {st.session_state.wg_selected}")
+    c.drawString(50, height - 90, f"Abteilung: {st.session_state.wg_selected}")
     c.drawString(50, height - 110, f"Datum: {datetime.now().strftime('%d.%m.%Y')}")
     
     # Hinweis für Test-Daten
