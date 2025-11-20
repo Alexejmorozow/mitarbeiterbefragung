@@ -211,7 +211,7 @@ QUESTIONS = {
     # DOMÄNE 8 – Kommunikation & Informationsfluss
     (8, 1): [
         "Übergaben sind vollständig und strukturiert.",
-        "Ich weiß zu Schichtbeginn, was mich erwartet."
+        "Ich weiss zu Schichtbeginn, was mich erwartet."
     ],
     (8, 2): [
         "Zusammenarbeit zwischen Pflege, Agogik, Therapie, Küche, Hauswirtschaft etc. läuft reibungslos.",
