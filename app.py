@@ -190,7 +190,7 @@ QUESTIONS = {
         "Defekte Geräte werden schnell repariert oder ersetzt."
     ],
     
-    # DOMÄNE 7 – Dienst- & Einsatzplanung
+    # DOMÄNE 7 – Dienst- & Einsatzplaning
     (7, 1): [
         "Dienstpläne sind früh und zuverlässig verfügbar.",
         "Kurzfristige Änderungen sind die Ausnahme."
@@ -281,25 +281,62 @@ def apply_custom_styles():
         background-color: {COLORS['light_mint']};
     }}
     
-    /* Progress Bar - Komplett überarbeitet */
+    /* Progress Bar - Weisser Hintergrund der sich dunkelgrün füllt */
     .stProgress > div {{
-        background-color: {COLORS['light_gray']};
+        background-color: {COLORS['white']} !important;
         border-radius: 10px;
-        border: none;
-        height: 12px;
+        border: 2px solid {COLORS['dark_green']} !important;
+        height: 16px;
+        box-shadow: none;
+        padding: 0;
+    }}
+    
+    .stProgress > div > div {{
+        background-color: {COLORS['white']} !important;
+        border-radius: 10px;
+        border: none !important;
+        height: 16px;
+        padding: 0;
+        margin: 0;
     }}
     
     .stProgress > div > div > div {{
-        background-color: {COLORS['dark_green']};
-        border-radius: 10px;
-        border: none;
+        background-color: {COLORS['dark_green']} !important;
+        border-radius: 8px;
+        border: none !important;
+        height: 12px;
+        margin: 0;
+        padding: 0;
     }}
     
-    /* Progress Bar Container ohne weissen Rand */
+    /* Spezifischer Selector für den Progressbar Container */
     div[data-testid="stProgress"] > div {{
-        background-color: {COLORS['light_gray']};
+        background-color: {COLORS['white']} !important;
         border-radius: 10px;
-        border: none;
+        border: 2px solid {COLORS['dark_green']} !important;
+        height: 16px;
+        padding: 0;
+        margin: 0;
+    }}
+    
+    /* Noch spezifischer für den inneren Container */
+    div[data-testid="stProgress"] > div > div {{
+        background-color: {COLORS['white']} !important;
+        border-radius: 10px;
+        border: none !important;
+        height: 16px;
+        padding: 0;
+        margin: 0;
+    }}
+    
+    /* Und für den eigentlichen Fortschrittsbalken */
+    div[data-testid="stProgress"] > div > div > div {{
+        background-color: {COLORS['dark_green']} !important;
+        border-radius: 8px;
+        border: none !important;
+        height: 12px;
+        margin: 2px;
+        padding: 0;
     }}
     
     /* Radio Buttons und andere Container */
