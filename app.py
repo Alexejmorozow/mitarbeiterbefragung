@@ -688,9 +688,8 @@ def render_results():
     st.info("""
     **📋 Nächste Schritte:**
     - Lade den PDF-Bericht herunter
-    - Drucke ihn aus oder speichere ihn digital
-    - Gib ihn an deine Abteilungsleitung weiter
-    - Der Bericht dient als Grundlage für Team-Besprechungen
+    - Drucke ihn aus
+    - Leg ihn deiner/m Vorgesetzten in sein/ihr Fach
     """)
     
     # Neue Befragung starten
