@@ -13,6 +13,7 @@ from email.mime.base import MIMEBase
 from email.mime.text import MIMEText
 from email import encoders
 import ssl
+import os
 
 # Konfiguration
 WG_OPTIONS = [
@@ -233,13 +234,24 @@ QUESTIONS = {
     ]
 }
 
-# Email Konfiguration - WEB.DE
-EMAIL_CONFIG = {
-    "smtp_server": "smtp.gmail.com",
-    "smtp_port": 587,
-    "sender_email": "alexejsworkflow@gmail.com",
-    "sender_password": "dvunswfyuiwxamhg",
-}
+# SICHERE Email Konfiguration - GMAIL mit Streamlit Secrets
+try:
+    EMAIL_CONFIG = {
+        "smtp_server": st.secrets["email"]["smtp_server"],
+        "smtp_port": st.secrets["email"]["smtp_port"],
+        "sender_email": st.secrets["email"]["sender_email"],
+        "sender_password": st.secrets["email"]["sender_password"],
+    }
+    EMAIL_CONFIGURED = True
+except (KeyError, FileNotFoundError):
+    st.error("⚠️ Email-Konfiguration nicht gefunden. Bitte secrets.toml prüfen.")
+    EMAIL_CONFIGURED = False
+    EMAIL_CONFIG = {
+        "smtp_server": "smtp.gmail.com",
+        "smtp_port": 587,
+        "sender_email": "",
+        "sender_password": "",
+    }
 
 # Email-Adressen der Abteilungsleitungen pro Abteilung
 WG_LEADER_EMAILS = {
@@ -251,30 +263,30 @@ WG_LEADER_EMAILS = {
     "WG Alpenblick": "leiter.alpenblick@domain.ch"
 }
 
-# Für den Test: Alle Emails an deine Adresse umleiten
+# Testmodus - Alle Emails an Test-Adresse umleiten
 TEST_MODE = True
 TEST_EMAIL = "schwarzetanne@hotmail.com"
 
-# Neues Farbschema: Matteres Grün, Anthrazit, Weiss
+# Farbschema: Matteres Grün, Anthrazit, Weiss
 COLORS = {
-    "mint": "#A8D5BA",      # Matteres Minzgrün (nicht mehr giftig)
-    "anthrazit": "#2F4F4F", # Anthrazit
-    "white": "#FFFFFF",     # Weiss
-    "light_gray": "#F8F9FA", # Hellgrau für Hintergründe
-    "dark_green": "#4A7C59", # Dunkleres Grün für Akzente
-    "light_mint": "#D4EDDA"  # Sehr helles Minzgrün
+    "mint": "#A8D5BA",
+    "anthrazit": "#2F4F4F",
+    "white": "#FFFFFF",
+    "light_gray": "#F8F9FA",
+    "dark_green": "#4A7C59",
+    "light_mint": "#D4EDDA"
 }
 
 def get_interpretation(score):
     """Gibt die Interpretation eines Scores zurück"""
     if score >= 4.2:
-        return "Sehr gut", colors.HexColor("#1E6F5C")  # Dunkles Grün
+        return "Sehr gut", colors.HexColor("#1E6F5C")
     elif score >= 3.6:
-        return "Gut", colors.HexColor("#2B8C69")       # Mittelgrün
+        return "Gut", colors.HexColor("#2B8C69")
     elif score >= 3.0:
-        return "Mittel", colors.HexColor("#E9B44C")    # Gelb
+        return "Mittel", colors.HexColor("#E9B44C")
     else:
-        return "Verbesserungsbedarf", colors.HexColor("#D9534F")  # Rot
+        return "Verbesserungsbedarf", colors.HexColor("#D9534F")
 
 def initialize_session():
     """Initialisiert die Session State Variablen"""
@@ -289,7 +301,6 @@ def initialize_session():
 
 def create_test_data():
     """Erstellt Test-Daten für schnelles Testen der Email-Funktion"""
-    # Simuliert ausgefüllte Antworten für alle Fragen
     test_answers = {}
     for domain in range(1, 9):
         for subdomain in range(1, 5):
@@ -322,22 +333,20 @@ def apply_custom_styles():
         background-color: {COLORS['light_mint']};
     }}
     
-    /* Progress Bar - Korrigiert für moderne Streamlit-Versionen */
-    /* Hintergrund der Progressbar */
+    /* Progress Bar */
     [data-testid="stProgress"] > div > div > div:first-child {{
         background-color: {COLORS['light_gray']} !important;
         border-radius: 10px;
         height: 20px;
     }}
 
-    /* Füllung */
     [data-testid="stProgress"] div[data-testid="stProgressBar"] {{
         background-color: {COLORS['dark_green']} !important;
         border-radius: 10px;
         height: 20px;
     }}
     
-    /* Radio Buttons und andere Container */
+    /* Radio Buttons */
     .stRadio > div {{
         background-color: {COLORS['dark_green']};
         color: {COLORS['white']};
@@ -346,13 +355,11 @@ def apply_custom_styles():
         border-left: 4px solid {COLORS['mint']};
     }}
     
-    /* Radio Button Labels - Weiss */
     .stRadio label {{
         color: {COLORS['white']} !important;
         font-weight: 500;
     }}
     
-    /* Radio Button Punkte */
     .stRadio [data-testid="stMarkdownContainer"] p {{
         color: {COLORS['white']} !important;
     }}
@@ -386,7 +393,7 @@ def apply_custom_styles():
         padding-bottom: 10px;
     }}
     
-    /* Erfolgsmeldung - Dunkelgrün mit weisser Schrift */
+    /* Erfolgsmeldung */
     .stSuccess {{
         background-color: {COLORS['dark_green']} !important;
         color: {COLORS['white']} !important;
@@ -395,7 +402,7 @@ def apply_custom_styles():
         padding: 15px;
     }}
     
-    /* Info Box - Dunkelgrün mit weisser Schrift */
+    /* Info Box */
     .stInfo {{
         background-color: {COLORS['dark_green']} !important;
         color: {COLORS['white']} !important;
@@ -405,7 +412,7 @@ def apply_custom_styles():
         padding: 15px;
     }}
     
-    /* Warning Box - Dunkelgrün mit weisser Schrift */
+    /* Warning Box */
     .stWarning {{
         background-color: {COLORS['dark_green']} !important;
         color: {COLORS['white']} !important;
@@ -414,7 +421,7 @@ def apply_custom_styles():
         padding: 15px;
     }}
     
-    /* Error Box - Rot für Fehler beibehalten */
+    /* Error Box */
     .stError {{
         background-color: #D9534F;
         color: {COLORS['white']} !important;
@@ -431,7 +438,6 @@ def apply_custom_styles():
         border-radius: 8px;
     }}
     
-    /* Expander Content */
     .streamlit-expanderContent {{
         background-color: {COLORS['light_gray']};
         border-radius: 0 0 8px 8px;
@@ -461,6 +467,10 @@ def get_recipient_email(wg_name):
 
 def send_email_with_pdf(pdf_buffer, wg_name):
     """Sendet den PDF-Bericht per Email an die entsprechende Abteilungsleitung"""
+    
+    if not EMAIL_CONFIGURED:
+        return False, "Email-Konfiguration nicht verfügbar. Bitte secrets.toml prüfen."
+    
     try:
         recipient_email = get_recipient_email(wg_name)
         
@@ -499,17 +509,21 @@ def send_email_with_pdf(pdf_buffer, wg_name):
         )
         msg.attach(pdf_attachment)
         
-        # Email senden mit WEB.DE
+        # Email senden mit Gmail
         context = ssl.create_default_context()
         with smtplib.SMTP(EMAIL_CONFIG["smtp_server"], EMAIL_CONFIG["smtp_port"]) as server:
             server.starttls(context=context)
             server.login(EMAIL_CONFIG["sender_email"], EMAIL_CONFIG["sender_password"])
             server.send_message(msg)
             
-        return True, f"Email erfolgreich an {recipient_email} versendet!"
+        return True, f"✅ Email erfolgreich an {recipient_email} versendet!"
         
+    except smtplib.SMTPAuthenticationError:
+        return False, "❌ Email-Login fehlgeschlagen. Bitte Anmeldedaten in secrets.toml prüfen."
+    except smtplib.SMTPException as e:
+        return False, f"❌ SMTP-Fehler: {str(e)}"
     except Exception as e:
-        return False, f"Fehler beim Senden der Email: {str(e)}"
+        return False, f"❌ Fehler beim Senden der Email: {str(e)}"
 
 def render_wg_selection():
     """WG Auswahl Schritt mit Test-Button"""
@@ -536,6 +550,23 @@ def render_wg_selection():
     Vielen Dank für deine Mitarbeit und die investierte Zeit!
     """)
     
+    # Email-Konfigurations-Status anzeigen
+    if not EMAIL_CONFIGURED:
+        st.error("""
+        ⚠️ **Email nicht konfiguriert**
+        
+        Für den Email-Versand bitte eine `.streamlit/secrets.toml` Datei erstellen mit:
+        ```toml
+        [email]
+        smtp_server = "smtp.gmail.com"
+        smtp_port = 587
+        sender_email = "deine-email@gmail.com"
+        sender_password = "dein-app-passwort"
+        ```
+        """)
+    else:
+        st.success("✅ Email-Konfiguration erfolgreich geladen")
+    
     # TEST-BUTTON FÜR SCHNELLEN EMAIL-TEST
     st.write("---")
     st.subheader("🛠️ Entwickler-Testbereich")
@@ -546,7 +577,7 @@ def render_wg_selection():
         if st.button("🚀 Schnelltest: Email-Funktion prüfen", type="secondary"):
             # Test-Daten erstellen und direkt zur Ergebnis-Seite springen
             st.session_state.answers = create_test_data()
-            st.session_state.wg_selected = "WG Fliegenpilz"  # Beispiel-WG
+            st.session_state.wg_selected = "WG Fliegenpilz"
             st.session_state.current_step = 'results'
             st.session_state.test_data_created = True
             st.rerun()
@@ -627,7 +658,7 @@ def render_survey():
     col1, col2 = st.columns(2)
     
     with col1:
-        if st.session_state.answers:  # Nur zurück wenn schon Antworten existieren
+        if st.session_state.answers:
             if st.button("← Zurück"):
                 # Letzte Antwort entfernen um zurückzugehen
                 last_key = list(st.session_state.answers.keys())[-1]
@@ -638,7 +669,6 @@ def render_survey():
         all_answered = all(answers) and len(answers) > 0
         if all_answered:
             if st.button("Weiter →"):
-                # Antworten speichern (mit Domänen-Info für spätere Auswertung)
                 st.session_state.answers[current_key] = answers
                 st.rerun()
         else:
@@ -677,7 +707,7 @@ def create_pdf_report():
     c = canvas.Canvas(buffer, pagesize=A4)
     width, height = A4
     
-    # Titel mit neuem Farbschema
+    # Titel
     c.setFillColor(colors.HexColor(COLORS['anthrazit']))
     c.setFont("Helvetica-Bold", 20)
     c.drawString(50, height - 60, "Mitarbeiterbefragung - Ergebnisbericht")
@@ -777,7 +807,7 @@ def create_pdf_report():
     table.wrapOn(c, width, height)
     table.drawOn(c, 50, y_position - (len(table_data) * 20))
     
-    # Gesamtscore - NUR numerisch, ohne Interpretation
+    # Gesamtscore
     y_position_summary = y_position - (len(table_data) * 20) - 60
     
     if scores:
@@ -849,22 +879,24 @@ def render_results():
             st.warning("🛠️ **Testmodus aktiv** - Alle Emails gehen an deine Test-Adresse")
         
         if st.button("📧 Bericht an Abteilungsleitung senden", type="primary"):
-            with st.spinner("Sende Email..."):
-                success, message = send_email_with_pdf(pdf_buffer, st.session_state.wg_selected)
-                
-                if success:
-                    st.success(message)
-                    # Erfolgs-Icon anzeigen
-                    st.balloons()
-                else:
-                    st.error(message)
-                    st.info("""
-                    **Troubleshooting für WEB.DE:**
-                    - Prüfe ob POP3/IMAP in den WEB.DE Einstellungen aktiviert ist
-                    - Stelle sicher, dass du dich kürzlich im WEB.DE Webinterface eingeloggt hast
-                    - Prüfe dein Passwort
-                    - Die erste Email könnte im Spam-Ordner landen
-                    """)
+            if not EMAIL_CONFIGURED:
+                st.error("Email-Konfiguration nicht verfügbar. Bitte secrets.toml erstellen.")
+            else:
+                with st.spinner("Sende Email..."):
+                    success, message = send_email_with_pdf(pdf_buffer, st.session_state.wg_selected)
+                    
+                    if success:
+                        st.success(message)
+                        st.balloons()
+                    else:
+                        st.error(message)
+                        st.info("""
+                        **Troubleshooting für Gmail:**
+                        - Verwende ein App-spezifisches Passwort (nicht dein normales Gmail-Passwort)
+                        - Stelle sicher, dass 2-Faktor-Authentifizierung aktiviert ist
+                        - Prüfe ob "Weniger sichere Apps" aktiviert ist (falls kein App-Passwort)
+                        - Die erste Email könnte im Spam-Ordner landen
+                        """)
     
     # Neue Befragung starten
     st.write("---")
