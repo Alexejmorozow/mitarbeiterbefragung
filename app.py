@@ -211,7 +211,7 @@ QUESTIONS = {
     # DOMÄNE 8 – Kommunikation & Informationsfluss
     (8, 1): [
         "Übergaben sind vollständig und strukturiert.",
-        "Ich weiß zu Schichtbeginn, was mich erwartet."
+        "Ich weiss zu Schichtbeginn, was mich erwartet."
     ],
     (8, 2): [
         "Zusammenarbeit zwischen Pflege, Agogik, Therapie, Küche, Hauswirtschaft etc. läuft reibungslos.",
@@ -261,34 +261,27 @@ def apply_custom_styles():
     """Wendet das benutzerdefinierte Farbschema an"""
     st.markdown(f"""
     <style>
-    /* Hauptfarben */
-    .main-header {{
-        color: {COLORS['anthrazit']};
-        border-bottom: 2px solid {COLORS['mint']};
-        padding-bottom: 10px;
-    }}
-    
-    /* Buttons */
-    .stButton>button {{
-        background-color: {COLORS['mint']};
-        color: {COLORS['anthrazit']};
-        border: none;
-        border-radius: 8px;
-        padding: 10px 20px;
-        font-weight: 500;
-    }}
-    
-    .stButton>button:hover {{
-        background-color: {COLORS['dark_green']};
-        color: {COLORS['white']};
-    }}
-    
-    /* Progress Bar */
-    .stProgress > div > div > div {{
+    /* Haupt-Hintergrund */
+    .stApp {{
         background-color: {COLORS['mint']};
     }}
     
-    /* Radio Buttons */
+    /* Container-Hintergründe anpassen */
+    .main .block-container {{
+        background-color: {COLORS['white']};
+        padding: 2rem;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        margin-top: 1rem;
+        margin-bottom: 1rem;
+    }}
+    
+    /* Sidebar Hintergrund */
+    .css-1d391kg {{
+        background-color: {COLORS['light_mint']};
+    }}
+    
+    /* Radio Buttons und andere Container */
     .stRadio > div {{
         background-color: {COLORS['light_gray']};
         padding: 15px;
@@ -298,14 +291,46 @@ def apply_custom_styles():
     
     /* Selectbox */
     .stSelectbox > div > div {{
+        background-color: {COLORS['white']};
         border: 1px solid {COLORS['anthrazit']};
         border-radius: 6px;
+    }}
+    
+    /* Progress Bar Container */
+    .stProgress > div {{
+        background-color: {COLORS['light_gray']};
+    }}
+    
+    .stProgress > div > div > div {{
+        background-color: {COLORS['dark_green']};
+    }}
+    
+    /* Buttons */
+    .stButton>button {{
+        background-color: {COLORS['dark_green']};
+        color: {COLORS['white']};
+        border: none;
+        border-radius: 8px;
+        padding: 10px 20px;
+        font-weight: 500;
+    }}
+    
+    .stButton>button:hover {{
+        background-color: {COLORS['anthrazit']};
+        color: {COLORS['white']};
+    }}
+    
+    /* Hauptfarben */
+    .main-header {{
+        color: {COLORS['anthrazit']};
+        border-bottom: 2px solid {COLORS['dark_green']};
+        padding-bottom: 10px;
     }}
     
     /* Erfolgsmeldung */
     .stSuccess {{
         background-color: {COLORS['light_mint']};
-        border: 1px solid {COLORS['mint']};
+        border: 1px solid {COLORS['dark_green']};
         border-radius: 8px;
         padding: 15px;
         color: {COLORS['anthrazit']};
@@ -313,10 +338,28 @@ def apply_custom_styles():
     
     /* Info Box */
     .stInfo {{
-        background-color: {COLORS['light_gray']};
+        background-color: {COLORS['light_mint']};
         border: 1px solid {COLORS['anthrazit']}30;
         border-radius: 8px;
         border-left: 4px solid {COLORS['anthrazit']};
+    }}
+    
+    /* Warning Box */
+    .stWarning {{
+        background-color: {COLORS['light_mint']};
+        border: 1px solid {COLORS['dark_green']};
+    }}
+    
+    /* Error Box */
+    .stError {{
+        background-color: #FFE6E6;
+        border: 1px solid #D9534F;
+    }}
+    
+    /* Expander */
+    .streamlit-expanderHeader {{
+        background-color: {COLORS['light_gray']};
+        border: 1px solid {COLORS['mint']};
     }}
     </style>
     """, unsafe_allow_html=True)
@@ -339,7 +382,7 @@ def render_wg_selection():
     **Wichtig:** Es geht nicht um die Beurteilung Einzelner, sondern um eine strukturierte Analyse der 
     Arbeitsbedingungen, Belastungen und Teamstärken **in unserem Hausverbund A**.
 
-    **Deine Teilnahme ist wertvoll**, denn nur durch eine breite Beteiligung entsteht ein realistisches Bild 
+    **Deine Teilnahme ist wertvoll**, denn only durch eine breite Beteiligung entsteht ein realistisches Bild 
     unserer Situation **im Hausverbund A**. Je genauer die Rückmeldungen, desto besser können wir verstehen, 
     was im Alltag gut funktioniert und wo Verbesserungen sinnvoll sind.
 
