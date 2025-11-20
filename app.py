@@ -156,7 +156,7 @@ QUESTIONS = {
     
     # DOMÄNE 5 – Gesundheit, körperliche & psychische Belastung
     (5, 1): [
-        "Die körperliche Belastung ist langfristig tragbar.",
+        "Die körperliche Belastung ist langfristik tragbar.",
         "Ich kann meinen Körper im Alltag schonen, ohne Qualität zu verlieren."
     ],
     (5, 2): [
@@ -211,7 +211,7 @@ QUESTIONS = {
     # DOMÄNE 8 – Kommunikation & Informationsfluss
     (8, 1): [
         "Übergaben sind vollständig und strukturiert.",
-        "Ich weiss zu Schichtbeginn, was mich erwartet."
+        "Ich weiß zu Schichtbeginn, was mich erwartet."
     ],
     (8, 2): [
         "Zusammenarbeit zwischen Pflege, Agogik, Therapie, Küche, Hauswirtschaft etc. läuft reibungslos.",
@@ -283,10 +283,22 @@ def apply_custom_styles():
     
     /* Radio Buttons und andere Container */
     .stRadio > div {{
-        background-color: {COLORS['light_gray']};
+        background-color: {COLORS['dark_green']};
+        color: {COLORS['white']};
         padding: 15px;
         border-radius: 8px;
         border-left: 4px solid {COLORS['mint']};
+    }}
+    
+    /* Radio Button Labels - Weiss */
+    .stRadio label {{
+        color: {COLORS['white']} !important;
+        font-weight: 500;
+    }}
+    
+    /* Radio Button Punkte */
+    .stRadio [data-testid="stMarkdownContainer"] p {{
+        color: {COLORS['white']} !important;
     }}
     
     /* Selectbox */
@@ -327,39 +339,68 @@ def apply_custom_styles():
         padding-bottom: 10px;
     }}
     
-    /* Erfolgsmeldung */
+    /* Erfolgsmeldung - Dunkelgrün mit weisser Schrift */
     .stSuccess {{
-        background-color: {COLORS['light_mint']};
+        background-color: {COLORS['dark_green']} !important;
+        color: {COLORS['white']} !important;
         border: 1px solid {COLORS['dark_green']};
         border-radius: 8px;
         padding: 15px;
-        color: {COLORS['anthrazit']};
     }}
     
-    /* Info Box */
+    /* Info Box - Dunkelgrün mit weisser Schrift */
     .stInfo {{
-        background-color: {COLORS['light_mint']};
-        border: 1px solid {COLORS['anthrazit']}30;
-        border-radius: 8px;
-        border-left: 4px solid {COLORS['anthrazit']};
-    }}
-    
-    /* Warning Box */
-    .stWarning {{
-        background-color: {COLORS['light_mint']};
+        background-color: {COLORS['dark_green']} !important;
+        color: {COLORS['white']} !important;
         border: 1px solid {COLORS['dark_green']};
+        border-radius: 8px;
+        border-left: 4px solid {COLORS['mint']};
+        padding: 15px;
     }}
     
-    /* Error Box */
+    /* Warning Box - Dunkelgrün mit weisser Schrift */
+    .stWarning {{
+        background-color: {COLORS['dark_green']} !important;
+        color: {COLORS['white']} !important;
+        border: 1px solid {COLORS['dark_green']};
+        border-radius: 8px;
+        padding: 15px;
+    }}
+    
+    /* Error Box - Rot für Fehler beibehalten */
     .stError {{
-        background-color: #FFE6E6;
+        background-color: #D9534F;
+        color: {COLORS['white']} !important;
         border: 1px solid #D9534F;
+        border-radius: 8px;
+        padding: 15px;
     }}
     
     /* Expander */
     .streamlit-expanderHeader {{
-        background-color: {COLORS['light_gray']};
+        background-color: {COLORS['dark_green']};
+        color: {COLORS['white']} !important;
         border: 1px solid {COLORS['mint']};
+        border-radius: 8px;
+    }}
+    
+    /* Expander Content */
+    .streamlit-expanderContent {{
+        background-color: {COLORS['light_gray']};
+        border-radius: 0 0 8px 8px;
+    }}
+    
+    /* Icons in den Boxen weiss färben */
+    .stSuccess svg, .stInfo svg, .stWarning svg {{
+        fill: {COLORS['white']} !important;
+        color: {COLORS['white']} !important;
+    }}
+    
+    /* Markdown Text in den Boxen weiss färben */
+    .stSuccess [data-testid="stMarkdownContainer"] p,
+    .stInfo [data-testid="stMarkdownContainer"] p,
+    .stWarning [data-testid="stMarkdownContainer"] p {{
+        color: {COLORS['white']} !important;
     }}
     </style>
     """, unsafe_allow_html=True)
@@ -382,17 +423,17 @@ def render_wg_selection():
     **Wichtig:** Es geht nicht um die Beurteilung Einzelner, sondern um eine strukturierte Analyse der 
     Arbeitsbedingungen, Belastungen und Teamstärken **in unserem Hausverbund A**.
 
-    **Deine Teilnahme ist wertvoll**, denn only durch eine breite Beteiligung entsteht ein realistisches Bild 
+    **Deine Teilnahme ist wertvoll**, denn nur durch eine breite Beteiligung entsteht ein realistisches Bild 
     unserer Situation **im Hausverbund A**. Je genauer die Rückmeldungen, desto besser können wir verstehen, 
     was im Alltag gut funktioniert und wo Verbesserungen sinnvoll sind.
 
     Vielen Dank für deine Mitarbeit und die investierte Zeit!
     """)
     
-    st.subheader("Bitte wähle deine Abteilung aus")
+    st.subheader("Bitte wähle deine Wohngruppe aus")
     
     selected_wg = st.selectbox(
-        "Abteilung:",
+        "Wohngruppe:",
         WG_OPTIONS,
         key="wg_select"
     )
@@ -410,7 +451,7 @@ def render_survey():
     st.title("📝 Mitarbeiterbefragung")
     st.markdown('</div>', unsafe_allow_html=True)
     
-    st.write(f"**Abteilung:** {st.session_state.wg_selected}")
+    st.write(f"**Wohngruppe:** {st.session_state.wg_selected}")
     
     # Aktuelle unbeantwortete Frage finden
     current_key = None
@@ -514,7 +555,7 @@ def create_pdf_report():
     
     # Metadaten
     c.setFont("Helvetica", 12)
-    c.drawString(50, height - 90, f"Abteilung: {st.session_state.wg_selected}")
+    c.drawString(50, height - 90, f"Wohngruppe: {st.session_state.wg_selected}")
     c.drawString(50, height - 110, f"Datum: {datetime.now().strftime('%d.%m.%Y')}")
     c.drawString(50, height - 130, "Hinweis: Diese Befragung wurde anonym durchgeführt.")
     
