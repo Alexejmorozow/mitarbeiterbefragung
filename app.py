@@ -97,7 +97,7 @@ QUESTIONS = {
     ],
     (1, 4): [
         "Bei Personalausfällen wird schnell und professionell reagiert.",
-        "Ich habe das Gefühl, dass Ausfälle nicht ungefiltert auf mich abgewälzt werden."
+        "Ich habe das Gefühl, dass bei Ausfällen fair reagiert wird."
     ],
     
     # DOMÄNE 2 – Einarbeitung & Personalentwicklung
@@ -168,7 +168,7 @@ QUESTIONS = {
         "Ich habe ausreichend Möglichkeiten zum kurzen Auftanken."
     ],
     (5, 4): [
-        "Gesundheitsangebote sind vorhanden und realistisch nutzbar.",
+        "Gesundheitsangebote (Fitnessraum, Obst, Schulungensind vorhanden und realistisch nutzbar.",
         "Gesundheitsprävention gehört sichtbar zum Arbeitsalltag."
     ],
     
