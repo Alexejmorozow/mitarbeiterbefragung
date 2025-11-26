@@ -32,7 +32,7 @@ DOMAINS = {
     4: "Führung",
     5: "Gesundheit, körperliche & psychische Belastung",
     6: "Technische & organisatorische Entlastungssysteme",
-    7: "Dienst- & Einsatzplanung",
+    7: "Dienst- & Einsatzplaning",
     8: "Kommunikation & Informationsfluss"
 }
 
@@ -96,11 +96,11 @@ QUESTIONS = {
     ],
     (1, 2): [
         "Ich kann meine Aufgaben meistens ohne häufige Unterbrechungen durchführen.",
-        "Ungeplante Störungen hindern mich regelmässig an konzentrierter Arbeit."
+        "Ungeplante Störungen hindern mich regelmässig an konzentrierter Arbeit."  # NEGATIV
     ],
     (1, 3): [
-        "Die Aufgaben pro Schicht haben im Vergleich zum Vorjahr spürbar zugenommen.",
-        "Anforderungen sind gestiegen, ohne dass Ressourcen angepasst wurden."
+        "Die Aufgaben pro Schicht haben im Vergleich zum Vorjahr spürbar zugenommen.",  # NEGATIV
+        "Anforderungen sind gestiegen, ohne dass Ressourcen angepasst wurden."  # NEGATIV
     ],
     (1, 4): [
         "Bei Personalausfällen wird schnell und professionell reagiert.",
@@ -244,14 +244,38 @@ COLORS = {
     "light_mint": "#D4EDDA"
 }
 
-# Scoring-Mapping
-SCORE_MAP = {
+# Scoring-Mapping für positive Fragen (Standard)
+SCORE_MAP_POSITIVE = {
     "Trifft voll zu": 5,
     "Trifft zu": 4,
     "Teils/teils": 3,
     "Trifft nicht zu": 2,
     "Trifft gar nicht zu": 1
 }
+
+# Scoring-Mapping für negative Fragen (umgekehrt)
+SCORE_MAP_NEGATIVE = {
+    "Trifft voll zu": 1,
+    "Trifft zu": 2,
+    "Teils/teils": 3,
+    "Trifft nicht zu": 4,
+    "Trifft gar nicht zu": 5
+}
+
+# Definition welche Fragen negativ sind (umgekehrte Skala)
+# Format: (Domain, Subdomain): [Fragen-Indizes die negativ sind]
+NEGATIVE_QUESTIONS = {
+    (1, 2): [1],  # "Ungeplante Störungen hindern mich..."
+    (1, 3): [0, 1],  # Beide Fragen in Arbeitsverdichtung sind negativ
+    # Weitere negative Fragen können hier hinzugefügt werden
+}
+
+def get_score_for_question(domain, subdomain, question_index, answer):
+    """Gibt den korrekten Score für eine Frage zurück (berücksichtigt negative Formulierungen)"""
+    if (domain, subdomain) in NEGATIVE_QUESTIONS:
+        if question_index in NEGATIVE_QUESTIONS[(domain, subdomain)]:
+            return SCORE_MAP_NEGATIVE.get(answer, 3)  # Fallback: 3 Punkte
+    return SCORE_MAP_POSITIVE.get(answer, 3)  # Standard: positive Skala
 
 def get_interpretation(score):
     """Gibt die Interpretation eines Scores zurück"""
@@ -434,7 +458,7 @@ def render_wg_selection():
 
     **Deine Teilnahme ist wertvoll**, denn nur durch eine breite Beteiligung entsteht ein realistisches Bild 
     unserer Situation **im Hausverbund A**. Je genauer die Rückmeldungen, desto besser können wir verstehen, 
-    was im Alltag gut funktioniert und wo Verbesserungen sinnvoll sind.
+    what im Alltag gut funktioniert und wo Verbesserungen sinnvoll sind.
 
     Vielen Dank für deine Mitarbeit und die investierte Zeit!
     """)
@@ -516,6 +540,12 @@ def render_survey():
     answers = []
     for i, question in enumerate(questions):
         st.write(f"**{question}**")
+        
+        # Hinweis für negative Fragen
+        is_negative = (domain, subdomain) in NEGATIVE_QUESTIONS and i in NEGATIVE_QUESTIONS[(domain, subdomain)]
+        if is_negative:
+            st.caption("🔄 Diese Frage ist negativ formuliert - 'Trifft voll zu' bedeutet hier eine schlechte Situation")
+        
         answer = st.radio(
             f"Deine Antwort:",
             options=["Trifft voll zu", "Trifft zu", "Teils/teils", "Trifft nicht zu", "Trifft gar nicht zu"],
@@ -544,23 +574,16 @@ def render_survey():
             st.button("Weiter →", disabled=True)
 
 def calculate_scores():
-    """Berechnet die Scores aus den Antworten"""
-    scoring = {
-        "Trifft voll zu": 5,
-        "Trifft zu": 4,
-        "Teils/teils": 3, 
-        "Trifft nicht zu": 2,
-        "Trifft gar nicht zu": 1
-    }
-    
+    """Berechnet die Scores aus den Antworten mit korrekter Behandlung negativer Fragen"""
     domain_scores = {}
+    
     for (domain, subdomain), answers in st.session_state.answers.items():
         if domain not in domain_scores:
             domain_scores[domain] = []
         
-        for answer in answers:
-            if answer in scoring:
-                domain_scores[domain].append(scoring[answer])
+        for i, answer in enumerate(answers):
+            score = get_score_for_question(domain, subdomain, i, answer)
+            domain_scores[domain].append(score)
     
     avg_scores = {}
     for domain, scores in domain_scores.items():
@@ -570,12 +593,17 @@ def calculate_scores():
     return avg_scores
 
 def calculate_scores_from_answers(answers):
-    """Berechnet Scores aus Antworten (für PDF)"""
+    """Berechnet Scores aus Antworten (für PDF) mit negativen Fragen"""
     domain_scores = {}
     for (d, sd), resp in answers.items():
-        nums = [SCORE_MAP.get(x) for x in resp if SCORE_MAP.get(x) is not None]
-        if nums:
-            domain_scores.setdefault(d, []).extend(nums)
+        scores = []
+        for i, answer in enumerate(resp):
+            score = get_score_for_question(d, sd, i, answer)
+            scores.append(score)
+        
+        if scores:
+            domain_scores.setdefault(d, []).extend(scores)
+    
     avg = {d: (sum(vals)/len(vals)) for d, vals in domain_scores.items()}
     # ensure all domains present
     for d in DOMAINS.keys():
@@ -587,8 +615,11 @@ def get_subdomain_avg(answers, d, sd):
     v = answers.get((d, sd))
     if not v:
         return None
-    nums = [SCORE_MAP.get(x) for x in v if SCORE_MAP.get(x) is not None]
-    return (sum(nums)/len(nums)) if nums else None
+    scores = []
+    for i, answer in enumerate(v):
+        score = get_score_for_question(d, sd, i, answer)
+        scores.append(score)
+    return (sum(scores)/len(scores)) if scores else None
 
 def create_radar_chart(scores):
     """Erstellt ein Radar-Diagramm für die PDF"""
