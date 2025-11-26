@@ -560,9 +560,9 @@ def create_radar_chart(scores):
     
     # Winkel für jede Achse
     angles = [n / float(N) * 2 * np.pi for n in range(N)]
-    angles += angles[:1]  # Schließe den Kreis
+    angles += angles[:1]  # Schliesse den Kreis
     
-    # Werte für den Plot (Kreis schließen)
+    # Werte für den Plot (Kreis schliessen)
     values += values[:1]
     
     # Plot erstellen
@@ -731,7 +731,7 @@ def create_pdf_report():
     
     story.append(Spacer(1, 8*mm))
     story.append(Paragraph(
-        "<i>Das Radar-Diagramm zeigt visuell die Stärken und Schwächen über alle Bereiche. Je weiter außen, desto besser die Bewertung.</i>",
+        "<i>Das Radar-Diagramm zeigt visuell die Stärken und Schwächen über alle Bereiche. Je weiter aussen, desto besser die Bewertung.</i>",
         styles["SmallMuted"]
     ))
     story.append(PageBreak())
@@ -791,7 +791,7 @@ def create_pdf_report():
     legend_data = [
         ["4.2 - 5.0", "Sehr gut", "Stabile Lage, Erhalt empfehlenswert"],
         ["3.6 - 4.1", "Gut", "Gute Lage, punktuelle Optimierung möglich"],
-        ["3.0 - 3.5", "Mittel", "Gezielte Maßnahmen priorisieren"],
+        ["3.0 - 3.5", "Mittel", "Gezielte Massnahmen priorisieren"],
         ["1.0 - 2.9", "Verbesserungsbedarf", "Handlungsbedarf hoch"]
     ]
     
