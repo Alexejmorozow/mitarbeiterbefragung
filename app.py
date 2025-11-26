@@ -3,6 +3,8 @@ import pandas as pd
 from datetime import datetime
 import json
 import io
+import matplotlib.pyplot as plt
+import numpy as np
 from reportlab.platypus import (
     SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak, Image, Flowable
 )
@@ -10,6 +12,8 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 from reportlab.lib.units import mm, cm
+import matplotlib
+matplotlib.use('Agg')  # Für Streamlit Kompatibilität
 
 # Konfiguration
 WG_OPTIONS = [
@@ -267,7 +271,12 @@ def create_test_data():
     test_answers = {}
     for domain in range(1, 9):
         for subdomain in range(1, 5):
-            test_answers[(domain, subdomain)] = ["Trifft zu", "Teils/teils"]
+            # Variierende Testdaten für realistischeres Radar-Diagramm
+            answers = ["Trifft voll zu", "Trifft zu", "Teils/teils", "Trifft nicht zu", "Trifft gar nicht zu"]
+            test_answers[(domain, subdomain)] = [
+                answers[domain % 5],
+                answers[(domain + 2) % 5]
+            ]
     return test_answers
 
 def apply_custom_styles():
@@ -540,6 +549,54 @@ def calculate_scores():
     
     return avg_scores
 
+def create_radar_chart(scores):
+    """Erstellt ein Radar-Diagramm für die PDF"""
+    # Daten vorbereiten
+    categories = list(DOMAINS.values())
+    values = [scores.get(i, 0) for i in range(1, 9)]
+    
+    # Anzahl Kategorien
+    N = len(categories)
+    
+    # Winkel für jede Achse
+    angles = [n / float(N) * 2 * np.pi for n in range(N)]
+    angles += angles[:1]  # Schließe den Kreis
+    
+    # Werte für den Plot (Kreis schließen)
+    values += values[:1]
+    
+    # Plot erstellen
+    fig, ax = plt.subplots(figsize=(10, 10), subplot_kw=dict(projection='polar'))
+    
+    # Radar plotten
+    ax.plot(angles, values, 'o-', linewidth=2, label='Bewertung', color=COLORS['dark_green'])
+    ax.fill(angles, values, alpha=0.25, color=COLORS['mint'])
+    
+    # Achsen anpassen
+    ax.set_theta_offset(np.pi / 2)
+    ax.set_theta_direction(-1)
+    
+    # Kategorien hinzufügen
+    ax.set_xticks(angles[:-1])
+    ax.set_xticklabels(categories, fontsize=9)
+    
+    # Y-Achse anpassen
+    ax.set_ylim(0, 5)
+    ax.set_yticks([1, 2, 3, 4, 5])
+    ax.set_yticklabels(['1', '2', '3', '4', '5'], fontsize=8)
+    ax.grid(True)
+    
+    # Titel
+    plt.title('Mitarbeiterbefragung - Profil der Arbeitsbereiche', 
+              size=14, color=COLORS['anthrazit'], pad=20)
+    
+    # Diagramm als Bild speichern
+    img_buffer = io.BytesIO()
+    plt.savefig(img_buffer, format='png', dpi=300, bbox_inches='tight')
+    plt.close()
+    img_buffer.seek(0)
+    return img_buffer
+
 # ---- PDF Aufbau mit platypus ----
 
 class HRDivider(Flowable):
@@ -611,7 +668,7 @@ def _footer(canvas_obj, doc):
     canvas_obj.restoreState()
 
 def create_pdf_report():
-    """Erstellt einen PDF-Report mit verbesserter Struktur"""
+    """Erstellt einen PDF-Report mit verbesserter Struktur und Radar-Diagramm"""
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(
         buffer,
@@ -642,123 +699,114 @@ def create_pdf_report():
     story.append(Spacer(1, 10*mm))
 
     # Executive Summary
-    story.append(Paragraph("Kurze Zusammenfassung", styles["H1"]))
+    story.append(Paragraph("Zusammenfassung", styles["H1"]))
     scores = calculate_scores()
     if scores:
         total_avg = sum(scores.values()) / len(scores)
         story.append(Paragraph(f"Gesamtdurchschnitt: <b>{total_avg:.2f}/5</b>", styles["Body"]))
-    else:
-        story.append(Paragraph("Keine Daten vorhanden.", styles["Body"]))
-    story.append(Spacer(1, 4*mm))
+        story.append(Spacer(1, 4*mm))
+        
+        # Stärken und Schwächen identifizieren
+        strengths = [d for d, s in scores.items() if s >= 4.0]
+        improvements = [d for d, s in scores.items() if s < 3.0]
+        
+        if strengths:
+            strength_text = "Stärken: " + ", ".join([DOMAINS[d] for d in strengths])
+            story.append(Paragraph(strength_text, styles["Body"]))
+        
+        if improvements:
+            improvement_text = "Entwicklungsbereiche: " + ", ".join([DOMAINS[d] for d in improvements])
+            story.append(Paragraph(improvement_text, styles["Body"]))
+    
+    story.append(PageBreak())
 
+    # Radar-Diagramm
+    story.append(Paragraph("Profilübersicht - Radar-Diagramm", styles["H1"]))
+    story.append(Spacer(1, 4*mm))
+    
+    # Radar Chart erstellen und einfügen
+    radar_chart_buffer = create_radar_chart(scores)
+    radar_img = Image(radar_chart_buffer, width=150*mm, height=150*mm)
+    story.append(radar_img)
+    
+    story.append(Spacer(1, 8*mm))
     story.append(Paragraph(
-        "Diese Auswertung gibt kompakt einen Überblick pro Themenbereich. Farben deuten die Dringlichkeit an.",
-        styles["Body"]
+        "<i>Das Radar-Diagramm zeigt visuell die Stärken und Schwächen across alle Bereiche. Je weiter außen, desto besser die Bewertung.</i>",
+        styles["SmallMuted"]
     ))
     story.append(PageBreak())
 
-    # Ergebnisse pro Bereich als Karte
-    for domain in range(1, 9):
-        domain_title = DOMAINS.get(domain, f"Bereich {domain}")
-        score = scores.get(domain, 0.0)
-        label, col = get_interpretation(score)
-
-        story.append(Paragraph(domain_title, styles["H1"]))
-        story.append(Spacer(1, 2*mm))
-
-        # farbige Box: einfache Darstellung via Tabelle mit 1 Zelle
-        box_data = [[f"{label}  —  {score:.2f}/5" ]]
-        box = Table(box_data, colWidths=[160*mm])
-        box.setStyle(TableStyle([
-            ("BACKGROUND", (0,0), (-1,-1), col),
-            ("TEXTCOLOR", (0,0), (-1,-1), colors.white),
-            ("FONTNAME", (0,0), (-1,-1), "Helvetica-Bold"),
-            ("FONTSIZE", (0,0), (-1,-1), 10),
-            ("LEFTPADDING", (0,0), (-1,-1), 6),
-            ("RIGHTPADDING", (0,0), (-1,-1), 6),
-            ("TOPPADDING", (0,0), (-1,-1), 4),
-            ("BOTTOMPADDING", (0,0), (-1,-1), 4),
-        ]))
-        story.append(box)
-        story.append(Spacer(1, 4*mm))
-
-        # kurze Hinweise / Interpretationstext
-        if score >= 4.2:
-            note = "Stabile Lage. Erhaltende Massnahmen empfohlen."
-        elif score >= 3.6:
-            note = "Gute Lage. Punktuelle Optimierungen möglich."
-        elif score >= 3.0:
-            note = "Mittel. Gezielte Massnahmen sollen priorisiert werden."
-        else:
-            note = "Verbesserungsbedarf. Handlungsbedarf hoch."
-
-        story.append(Paragraph(note, styles["Body"]))
-        story.append(Spacer(1, 4*mm))
-
-        # Tabelle mit Subdomain-Informationen
-        tdata = [["Teilbereich", "Score"]]
-        # Hier könnten bei Bedarf Subdomain-Scores eingefügt werden
-        tdata.append(["Gesamtbewertung", f"{score:.2f}/5"])
-        t = Table(tdata, colWidths=[110*mm, 40*mm])
-        t.setStyle(TableStyle([
-            ("BACKGROUND", (0,0), (-1,0), colors.HexColor(COLORS["mint"])),
-            ("TEXTCOLOR", (0,0), (-1,0), colors.HexColor(COLORS["anthrazit"])),
-            ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
-            ("ALIGN", (1,1), (1,-1), "CENTER"),
-            ("GRID", (0,0), (-1,-1), 0.5, colors.HexColor(COLORS["anthrazit"])),
-            ("BOTTOMPADDING", (0,0), (-1,-1), 6),
-            ("TOPPADDING", (0,0), (-1,-1), 6),
-        ]))
-        story.append(t)
-        story.append(Spacer(1, 8*mm))
-        story.append(HRDivider(width=160))
-        story.append(Spacer(1, 8*mm))
-
     # Detailtabelle: Übersicht aller Bereiche
-    story.append(PageBreak())
-    story.append(Paragraph("Übersicht aller Bereiche", styles["H1"]))
+    story.append(Paragraph("Detaillierte Übersicht", styles["H1"]))
+    story.append(Spacer(1, 4*mm))
+    
     table_data = [["Nr", "Bereich", "Score", "Interpretation"]]
     for d in range(1,9):
         s = scores.get(d, 0.0)
         label, _ = get_interpretation(s)
         table_data.append([str(d), DOMAINS.get(d, ""), f"{s:.2f}/5", label])
 
-    table = Table(table_data, colWidths=[20*mm, 90*mm, 30*mm, 40*mm])
+    table = Table(table_data, colWidths=[15*mm, 85*mm, 25*mm, 45*mm])
     table.setStyle(TableStyle([
         ("BACKGROUND", (0,0), (-1,0), colors.HexColor(COLORS["mint"])),
         ("TEXTCOLOR", (0,0), (-1,0), colors.HexColor(COLORS["anthrazit"])),
         ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
+        ("FONTSIZE", (0,0), (-1,0), 10),
         ("GRID", (0,0), (-1,-1), 0.5, colors.HexColor(COLORS["anthrazit"])),
         ("VALIGN", (0,0), (-1,-1), "MIDDLE"),
+        ("ALIGN", (0,0), (0,-1), "CENTER"),
         ("ALIGN", (2,1), (2,-1), "CENTER"),
-        ("ALIGN", (0,1), (0,-1), "CENTER"),
+        ("FONTSIZE", (0,1), (-1,-1), 9),
+        ("BOTTOMPADDING", (0,0), (-1,-1), 8),
+        ("TOPPADDING", (0,0), (-1,-1), 8),
     ]))
 
-    # bedingte Färbung für Interpretation
+    # Bedingte Färbung für Interpretation
     for i in range(1, len(table_data)):
         interp = table_data[i][3]
         if interp == "Sehr gut":
             bg = colors.HexColor("#1E6F5C")
+            text_color = colors.white
         elif interp == "Gut":
             bg = colors.HexColor("#2B8C69")
+            text_color = colors.white
         elif interp == "Mittel":
             bg = colors.HexColor("#E9B44C")
+            text_color = colors.black
         else:
             bg = colors.HexColor("#D9534F")
+            text_color = colors.white
+            
         table.setStyle(TableStyle([
             ("BACKGROUND", (3,i), (3,i), bg),
-            ("TEXTCOLOR", (3,i), (3,i), colors.white if interp != "Mittel" else colors.black),
+            ("TEXTCOLOR", (3,i), (3,i), text_color),
             ("FONTNAME", (3,i), (3,i), "Helvetica-Bold"),
         ]))
 
     story.append(table)
-    story.append(Spacer(1, 8*mm))
+    story.append(Spacer(1, 10*mm))
 
-    # Hinweise & Next steps
-    story.append(Paragraph("Nächste Schritte", styles["H1"]))
-    story.append(Paragraph("1) Bericht intern teilen. 2) Fokusgruppen planen. 3) Massnahmen priorisieren.", styles["Body"]))
-    story.append(Spacer(1, 6*mm))
-    story.append(Paragraph("Produziert mit internem Tool.", styles["SmallMuted"]))
+    # Legende
+    story.append(Paragraph("Interpretation der Bewertungen:", styles["H1"]))
+    legend_data = [
+        ["4.2 - 5.0", "Sehr gut", "Stabile Lage, Erhalt empfehlenswert"],
+        ["3.6 - 4.1", "Gut", "Gute Lage, punktuelle Optimierung möglich"],
+        ["3.0 - 3.5", "Mittel", "Gezielte Maßnahmen priorisieren"],
+        ["1.0 - 2.9", "Verbesserungsbedarf", "Handlungsbedarf hoch"]
+    ]
+    
+    legend_table = Table(legend_data, colWidths=[25*mm, 35*mm, 100*mm])
+    legend_table.setStyle(TableStyle([
+        ("BACKGROUND", (0,0), (-1,0), colors.HexColor(COLORS["mint"])),
+        ("TEXTCOLOR", (0,0), (-1,0), colors.HexColor(COLORS["anthrazit"])),
+        ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
+        ("GRID", (0,0), (-1,-1), 0.5, colors.HexColor(COLORS["anthrazit"])),
+        ("FONTSIZE", (0,0), (-1,-1), 8),
+        ("BOTTOMPADDING", (0,0), (-1,-1), 6),
+        ("TOPPADDING", (0,0), (-1,-1), 6),
+    ]))
+    
+    story.append(legend_table)
 
     # Build
     doc.build(story, onFirstPage=_footer, onLaterPages=_footer)
@@ -779,6 +827,43 @@ def render_results():
     st.subheader("Zusammenfassung deiner Antworten")
     
     scores = calculate_scores()
+    
+    # Radar Chart in Streamlit anzeigen
+    st.subheader("📊 Profilübersicht - Radar-Diagramm")
+    
+    # Daten für das Radar-Diagramm
+    categories = list(DOMAINS.values())
+    values = [scores.get(i, 0) for i in range(1, 9)]
+    
+    fig, ax = plt.subplots(figsize=(10, 8), subplot_kw=dict(projection='polar'))
+    
+    # Anzahl Kategorien und Winkel
+    N = len(categories)
+    angles = [n / float(N) * 2 * np.pi for n in range(N)]
+    angles += angles[:1]
+    values += values[:1]
+    
+    # Plot
+    ax.plot(angles, values, 'o-', linewidth=2, label='Bewertung', color=COLORS['dark_green'])
+    ax.fill(angles, values, alpha=0.25, color=COLORS['mint'])
+    
+    # Achsen anpassen
+    ax.set_theta_offset(np.pi / 2)
+    ax.set_theta_direction(-1)
+    ax.set_xticks(angles[:-1])
+    ax.set_xticklabels(categories, fontsize=10)
+    ax.set_ylim(0, 5)
+    ax.set_yticks([1, 2, 3, 4, 5])
+    ax.set_yticklabels(['1', '2', '3', '4', '5'])
+    ax.grid(True)
+    ax.set_title('Profil der Arbeitsbereiche', size=14, pad=20)
+    
+    st.pyplot(fig)
+    plt.close()
+    
+    # Detailtabelle
+    st.subheader("📋 Detaillierte Auswertung")
+    
     for domain in range(1, 9):
         score = scores.get(domain, 0)
         interpretation, color = get_interpretation(score)
@@ -788,22 +873,15 @@ def render_results():
     # PDF erstellen
     pdf_buffer = create_pdf_report()
     
-    st.subheader("📊 Bericht herunterladen")
+    st.subheader("📄 Bericht herunterladen")
     
     st.download_button(
-        label="📄 PDF Bericht herunterladen",
+        label="📊 PDF Bericht herunterladen",
         data=pdf_buffer,
         file_name=f"Befragung_{st.session_state.wg_selected}_{datetime.now().strftime('%Y%m%d')}.pdf",
         mime="application/pdf",
         type="primary"
     )
-    
-    st.info("""
-    **📋 Nächste Schritte:**
-    - Lade den PDF-Bericht herunter
-    - Drucke ihn aus
-    - Leg ihn deiner/m Vorgesetzten in sein/ihr Fach
-    """)
     
     # Neue Befragung starten
     st.write("---")
