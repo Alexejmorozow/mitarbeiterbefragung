@@ -168,7 +168,7 @@ QUESTIONS = {
         "Ich habe ausreichend Möglichkeiten zum kurzen Auftanken."
     ],
     (5, 4): [
-        "Gesundheitsangebote (Fitnessraum, Obst, Schulungensind vorhanden und realistisch nutzbar.",
+        "Gesundheitsangebote (Fitnessraum, Obst, Schulungen, Gesundheitsmanagement etc.) sind vorhanden und realistisch nutzbar.",
         "Gesundheitsprävention gehört sichtbar zum Arbeitsalltag."
     ],
     
