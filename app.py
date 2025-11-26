@@ -1,10 +1,12 @@
+# app.py
 import streamlit as st
-import pandas as pd
-from datetime import datetime
-import json
 import io
-import matplotlib.pyplot as plt
+from datetime import datetime
 import numpy as np
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+
 from reportlab.platypus import (
     SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak, Image, Flowable
 )
@@ -12,14 +14,17 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 from reportlab.lib.units import mm, cm
-import matplotlib
-matplotlib.use('Agg')  # Für Streamlit Kompatibilität
 
-# Konfiguration
+# -------------------------
+# Config / copyable values
+# -------------------------
+PAGE_TITLE = "Mitarbeiterbefragung - Klinisch sauber"
+LOGO_PATH = None  # set path to a PNG if you want a logo in title page
+
 WG_OPTIONS = [
     "Spezialangebot",
     "WG Fliegenpilz",
-    "WG Kristall", 
+    "WG Kristall",
     "WG Alphorn",
     "WG Steinbock",
     "WG Alpenblick"
@@ -28,7 +33,7 @@ WG_OPTIONS = [
 DOMAINS = {
     1: "Arbeitsbelastung & Zeitdruck",
     2: "Einarbeitung & Personalentwicklung",
-    3: "Zusammenarbeit & Teamklima", 
+    3: "Zusammenarbeit & Teamklima",
     4: "Führung",
     5: "Gesundheit, körperliche & psychische Belastung",
     6: "Technische & organisatorische Entlastungssysteme",
@@ -37,885 +42,408 @@ DOMAINS = {
 }
 
 SUBDOMAINS = {
-    1: {
-        1: "Zeit pro Bewohner",
-        2: "Unterbrechungen", 
-        3: "Arbeitsverdichtung",
-        4: "Ausfallmanagement"
-    },
-    2: {
-        1: "Onboarding-Qualität",
-        2: "Verfügbarkeit von Ansprechpartnern",
-        3: "Übergaben & Informationsfluss", 
-        4: "Fort- und Weiterbildung"
-    },
-    3: {
-        1: "Zusammenhalt",
-        2: "Verlässlichkeit",
-        3: "Rollen & Aufgaben", 
-        4: "Umgang mit Spannungen"
-    },
-    4: {
-        1: "Fachliche Führung",
-        2: "Soziale Führung",
-        3: "Verfügbarkeit", 
-        4: "Klarheit von Erwartungen"
-    },
-    5: {
-        1: "Physische Belastung",
-        2: "Psychische Erschöpfung",
-        3: "Pausenrealisierung", 
-        4: "Gesundheitsangebote"
-    },
-    6: {
-        1: "Technische Hilfsmittel",
-        2: "Digitale Dokumentation",
-        3: "Standardisierte Abläufe", 
-        4: "Verfügbarkeit & Wartung"
-    },
-    7: {
-        1: "Planbarkeit",
-        2: "Fairness",
-        3: "Umgang mit Ausfällen", 
-        4: "Erholung"
-    },
-    8: {
-        1: "Schichtübergaben",
-        2: "Austausch zwischen Berufsgruppen",
-        3: "Kommunikation mit Leitung", 
-        4: "Digitale Kanäle"
-    }
+    1: {1: "Zeit pro Bewohner", 2: "Unterbrechungen", 3: "Arbeitsverdichtung", 4: "Ausfallmanagement"},
+    2: {1: "Onboarding-Qualität", 2: "Verfügbarkeit von Ansprechpartnern", 3: "Übergaben & Informationsfluss", 4: "Fort- und Weiterbildung"},
+    3: {1: "Zusammenhalt", 2: "Verlässlichkeit", 3: "Rollen & Aufgaben", 4: "Umgang mit Spannungen"},
+    4: {1: "Fachliche Führung", 2: "Soziale Führung", 3: "Verfügbarkeit", 4: "Klarheit von Erwartungen"},
+    5: {1: "Physische Belastung", 2: "Psychische Erschöpfung", 3: "Pausenrealisierung", 4: "Gesundheitsangebote"},
+    6: {1: "Technische Hilfsmittel", 2: "Digitale Dokumentation", 3: "Standardisierte Abläufe", 4: "Verfügbarkeit & Wartung"},
+    7: {1: "Planbarkeit", 2: "Fairness", 3: "Umgang mit Ausfällen", 4: "Erholung"},
+    8: {1: "Schichtübergaben", 2: "Austausch zwischen Berufsgruppen", 3: "Kommunikation mit Leitung", 4: "Digitale Kanäle"}
 }
 
-# Vollständiger Fragenkatalog
-QUESTIONS = {
-    # DOMÄNE 1 – Arbeitsbelastung & Zeitdruck
-    (1, 1): [
-        "Ich habe genügend Zeit, um Bewohner*innen professionell und in Ruhe zu betreuen.",
-        "Ich schaffe die Dokumentation üblicherweise innerhalb der regulären Arbeitszeit."
-    ],
-    (1, 2): [
-        "Ich kann meine Aufgaben meistens ohne häufige Unterbrechungen durchführen.",
-        "Ungeplante Störungen hindern mich regelmässig an konzentrierter Arbeit."
-    ],
-    (1, 3): [
-        "Die Aufgaben pro Schicht haben im Vergleich zum Vorjahr spürbar zugenommen.",
-        "Anforderungen sind gestiegen, ohne dass Ressourcen angepasst wurden."
-    ],
-    (1, 4): [
-        "Bei Personalausfällen wird schnell und professionell reagiert.",
-        "Ich habe das Gefühl, dass bei Ausfällen fair reagiert wird."
-    ],
-    
-    # DOMÄNE 2 – Einarbeitung & Personalentwicklung
-    (2, 1): [
-        "Die Einarbeitung neuer Mitarbeitender folgt einem klaren Plan.",
-        "Neue Kolleg*innen wissen früh, was von ihnen erwartet wird."
-    ],
-    (2, 2): [
-        "Neue Mitarbeitende haben feste Personen, die sie begleiten.",
-        "Bei Unsicherheiten ist verlässlich jemand ansprechbar."
-    ],
-    (2, 3): [
-        "Schichtübergaben sind vollständig und verständlich.",
-        "Wichtige Infos gehen zwischen Früh-, Mittel- und Spätdienst nicht verloren."
-    ],
-    (2, 4): [
-        "Ich habe ausreichend Möglichkeiten zur Weiterentwicklung.",
-        "Fortbildungen sind praxisrelevant und hilfreich."
-    ],
-    
-    # DOMÄNE 3 – Zusammenarbeit & Teamklima
-    (3, 1): [
-        "In meinem Team besteht echter Zusammenhalt, auch bei Stress.",
-        "Wir unterstützen uns gegenseitig."
-    ],
-    (3, 2): [
-        "Kolleg*innen halten sich an Absprachen.",
-        "Ich kann mich auf mein Team verlassen."
-    ],
-    (3, 3): [
-        "Zuständigkeiten und Verantwortungen sind klar geregelt.",
-        "Jeder weiss, was zu tun ist."
-    ],
-    (3, 4): [
-        "Konflikte werden offen angesprochen.",
-        "Kritik ist möglich, ohne negative Folgen befürchten zu müssen."
-    ],
-    
-    # DOMÄNE 4 – Führung
-    (4, 1): [
-        "Meine Leitung trifft fachlich fundierte Entscheidungen.",
-        "Die Führungskraft verfügt über hohe fachliche Kompetenz."
-    ],
-    (4, 2): [
-        "Ich werde respektvoll und wertschätzend behandelt.",
-        "Meine Führungskraft interessiert sich dafür, wie es mir geht."
-    ],
-    (4, 3): [
-        "Die Leitung ist erreichbar, wenn ich Unterstützung brauche.",
-        "Auch in schwierigen Situationen habe ich Rückhalt."
-    ],
-    (4, 4): [
-        "Ziele und Prioritäten sind klar kommuniziert.",
-        "Entscheidungen sind transparent begründet."
-    ],
-    
-    # DOMÄNE 5 – Gesundheit, körperliche & psychische Belastung
-    (5, 1): [
-        "Die körperliche Belastung ist langfristig tragbar.",
-        "Ich kann meinen Körper im Alltag schonen, ohne Qualität zu verlieren."
-    ],
-    (5, 2): [
-        "Ich kann nach der Arbeit gut abschalten.",
-        "Emotionale Belastungen wirken nicht lange nach."
-    ],
-    (5, 3): [
-        "Ich kann Pausen meistens wie geplant einhalten.",
-        "Ich habe ausreichend Möglichkeiten zum kurzen Auftanken."
-    ],
-    (5, 4): [
-        "Gesundheitsangebote (Fitnessraum, Obst, Schulungen, Gesundheitsmanagement etc.) sind vorhanden und realistisch nutzbar.",
-        "Gesundheitsprävention gehört sichtbar zum Arbeitsalltag."
-    ],
-    
-    # DOMÄNE 6 – Technische & organisatorische Entlastungssysteme
-    (6, 1): [
-        "Transfer- und Hebehilfen sind funktionsfähig und verfügbar.",
-        "Ich kann technische Hilfsmittel jederzeit nutzen."
-    ],
-    (6, 2): [
-        "Digitale Dokumentation spart Zeit.",
-        "Systeme sind logisch und intuitiv bedienbar."
-    ],
-    (6, 3): [
-        "Es bestehen klare und verständliche Checklisten oder Arbeitsabläufe, die jederzeit leicht auffindbar sind.",
-        "Standards werden im Alltag angewendet."
-    ],
-    (6, 4): [
-        "Material und Hilfsmittel sind ausreichend vorhanden.",
-        "Defekte Geräte werden schnell repariert oder ersetzt."
-    ],
-    
-    # DOMÄNE 7 – Dienst- & Einsatzplanung
-    (7, 1): [
-        "Dienstpläne sind früh und zuverlässig verfügbar.",
-        "Kurzfristige Änderungen sind die Ausnahme."
-    ],
-    (7, 2): [
-        "Wochenend- und Spätdienste sind fair verteilt.",
-        "Die Belastung ist im Team ausgewogen."
-    ],
-    (7, 3): [
-        "Bei Ausfällen wird kompetent reagiert.",
-        "Ich werde dabei nicht dauerhaft überlastet."
-    ],
-    (7, 4): [
-        "Ich habe ausreichend Erholungszeit zwischen Diensten.",
-        "Dienstfolgen (z. B. Spät–Früh) sind nicht dauerhaft belastend."
-    ],
-    
-    # DOMÄNE 8 – Kommunikation & Informationsfluss
-    (8, 1): [
-        "Übergaben sind vollständig und strukturiert.",
-        "Ich weiss zu Schichtbeginn, was mich erwartet."
-    ],
-    (8, 2): [
-        "Zusammenarbeit zwischen Pflege, Agogik, Therapie, Küche, Hauswirtschaft etc. läuft reibungslos.",
-        "Informationen werden konsistent weitergegeben."
-    ],
-    (8, 3): [
-        "Entscheidungen werden erklärt und begründet.",
-        "Ich fühle mich ausreichend informiert."
-    ],
-    (8, 4): [
-        "Digitale Kommunikationswege sind klar geregelt.",
-        "Es gibt kein Durcheinander mehrerer widersprüchlicher Kanäle."
-    ]
-}
-
-# Farbschema: Matteres Grün, Anthrazit, Weiss
-COLORS = {
+# clinical color theme (white + mint + grey)
+COL_HEX = {
     "mint": "#A8D5BA",
-    "anthrazit": "#2F4F4F",
-    "white": "#FFFFFF",
+    "dark_mint": "#4A7C59",
+    "anthracite": "#2F4F4F",
     "light_gray": "#F8F9FA",
-    "dark_green": "#4A7C59",
-    "light_mint": "#D4EDDA"
+    "white": "#FFFFFF",
+    "warning": "#E9B44C",
+    "danger": "#D9534F"
 }
 
-def get_interpretation(score):
-    """Gibt die Interpretation eines Scores zurück"""
+# scoring map
+SCORE_MAP = {
+    "Trifft voll zu": 5,
+    "Trifft zu": 4,
+    "Teils/teils": 3,
+    "Trifft nicht zu": 2,
+    "Trifft gar nicht zu": 1
+}
+
+# -------------------------
+# Helpers: styles, footer
+# -------------------------
+def build_styles():
+    base = getSampleStyleSheet()
+    base.add(ParagraphStyle("TitleCustom", parent=base["Title"],
+                            fontName="Helvetica-Bold", fontSize=20, leading=24, textColor=colors.HexColor(COL_HEX["anthracite"])))
+    base.add(ParagraphStyle("H1", parent=base["Heading1"],
+                            fontName="Helvetica-Bold", fontSize=14, leading=18, textColor=colors.HexColor(COL_HEX["anthracite"])))
+    base.add(ParagraphStyle("Body", parent=base["BodyText"],
+                            fontName="Helvetica", fontSize=10, leading=13, textColor=colors.HexColor(COL_HEX["anthracite"])))
+    base.add(ParagraphStyle("Muted", parent=base["BodyText"],
+                            fontName="Helvetica-Oblique", fontSize=9, leading=11, textColor=colors.HexColor("#666666")))
+    return base
+
+def footer(canvas_obj, doc):
+    canvas_obj.saveState()
+    w, h = A4
+    canvas_obj.setFont("Helvetica", 8)
+    footer_text = f"Erstellt: {datetime.now().strftime('%d.%m.%Y')}   |   Seite {doc.page}"
+    canvas_obj.setFillColor(colors.HexColor(COL_HEX["anthracite"]))
+    canvas_obj.drawRightString(w - 20*mm, 12*mm, footer_text)
+    canvas_obj.restoreState()
+
+class HRLine(Flowable):
+    def __init__(self, width=160*mm, thickness=1):
+        super().__init__()
+        self.width = width
+        self.thickness = thickness
+    def draw(self):
+        self.canv.setLineWidth(self.thickness)
+        self.canv.setStrokeColor(colors.HexColor(COL_HEX["dark_mint"]))
+        self.canv.line(0, 0, self.width, 0)
+
+# -------------------------
+# Scoring logic
+# -------------------------
+def calculate_scores_from_answers(answers):
+    """
+    answers: dict keyed by (domain, subdomain) -> list of textual answers
+    returns: domain_avg_scores: dict domain -> float (1..5)
+    """
+    domain_scores = {}
+    for (domain, subdomain), resp_list in answers.items():
+        vals = [SCORE_MAP.get(r, None) for r in resp_list]
+        vals = [v for v in vals if v is not None]
+        if vals:
+            domain_scores.setdefault(domain, []).extend(vals)
+    domain_avg = {d: (sum(vs)/len(vs)) for d, vs in domain_scores.items()}
+    # ensure all domains present
+    for d in DOMAINS.keys():
+        domain_avg.setdefault(d, 0.0)
+    return domain_avg
+
+# -------------------------
+# Chart creation
+# -------------------------
+def create_radar_png(domain_scores):
+    labels = [DOMAINS[i] for i in range(1, 9)]
+    values = [domain_scores.get(i, 0.0) for i in range(1, 9)]
+    N = len(labels)
+    angles = np.linspace(0, 2 * np.pi, N, endpoint=False).tolist()
+    angles += angles[:1]
+    vals = values + values[:1]
+
+    fig = plt.figure(figsize=(6, 6))
+    ax = fig.add_subplot(111, polar=True)
+    ax.set_theta_offset(np.pi / 2)
+    ax.set_theta_direction(-1)
+    ax.plot(angles, vals, linewidth=2, linestyle='solid', color=COL_HEX["dark_mint"])
+    ax.fill(angles, vals, color=COL_HEX["mint"], alpha=0.25)
+    ax.set_ylim(0, 5)
+    ax.set_xticks(angles[:-1])
+    ax.set_xticklabels(labels, fontsize=8)
+    ax.set_yticks([1,2,3,4,5])
+    ax.set_title("Profil der Arbeitsbereiche", pad=12, fontsize=12, color=COL_HEX["anthracite"])
+    buf = io.BytesIO()
+    fig.tight_layout()
+    fig.savefig(buf, format="png", dpi=200, bbox_inches="tight")
+    plt.close(fig)
+    buf.seek(0)
+    return buf
+
+def create_bar_png(domain_scores):
+    labels = [DOMAINS[i] for i in range(1, 9)]
+    values = [domain_scores.get(i, 0.0) for i in range(1, 9)]
+
+    fig, ax = plt.subplots(figsize=(8, 3))
+    bars = ax.barh(range(len(labels)), values, color=COL_HEX["mint"], edgecolor=COL_HEX["dark_mint"])
+    ax.set_yticks(range(len(labels)))
+    ax.set_yticklabels(labels, fontsize=8)
+    ax.set_xlim(0,5)
+    ax.invert_yaxis()
+    ax.set_xlabel("Score (1-5)")
+    ax.grid(axis='x', linestyle=':', linewidth=0.5)
+    fig.tight_layout()
+    buf = io.BytesIO()
+    fig.savefig(buf, format="png", dpi=200, bbox_inches="tight")
+    plt.close(fig)
+    buf.seek(0)
+    return buf
+
+# -------------------------
+# PDF assembly
+# -------------------------
+def make_pdf_buffer(wg_name, answers, include_charts=True, logo_path=None):
+    domain_scores = calculate_scores_from_answers(answers)
+    overall = sum(domain_scores.values()) / len(domain_scores) if domain_scores else 0.0
+
+    buf = io.BytesIO()
+    doc = SimpleDocTemplate(buf, pagesize=A4,
+                            leftMargin=20*mm, rightMargin=20*mm,
+                            topMargin=20*mm, bottomMargin=25*mm)
+    styles = build_styles()
+    story = []
+
+    # Title page
+    if logo_path:
+        try:
+            story.append(Image(logo_path, width=40*mm, height=40*mm))
+            story.append(Spacer(1,4*mm))
+        except Exception:
+            pass
+    story.append(Paragraph(PAGE_TITLE, styles["TitleCustom"]))
+    story.append(Spacer(1, 4*mm))
+    story.append(Paragraph(f"<b>Abteilung:</b> {wg_name}", styles["Body"]))
+    story.append(Paragraph(f"<b>Erstellt:</b> {datetime.now().strftime('%d.%m.%Y')}", styles["Body"]))
+    story.append(Spacer(1, 6*mm))
+    story.append(HRLine(width=170*mm))
+    story.append(Spacer(1, 8*mm))
+
+    # Executive summary
+    story.append(Paragraph("Kurz: Executive summary", styles["H1"]))
+    story.append(Spacer(1, 2*mm))
+    story.append(Paragraph(f"Gesamtindex: <b>{overall:.2f}</b> (Skala 1..5)", styles["Body"]))
+    strengths = [DOMAINS[d] for d, s in domain_scores.items() if s >= 4.2]
+    to_improve = [DOMAINS[d] for d, s in domain_scores.items() if s < 3.0]
+    if strengths:
+        story.append(Paragraph("Stärken: " + ", ".join(strengths), styles["Body"]))
+    if to_improve:
+        story.append(Paragraph("Entwicklungsbereiche: " + ", ".join(to_improve), styles["Body"]))
+    story.append(Spacer(1, 6*mm))
+    story.append(PageBreak())
+
+    # Charts
+    if include_charts:
+        story.append(Paragraph("Profilübersicht", styles["H1"]))
+        story.append(Spacer(1, 4*mm))
+        radar_buf = create_radar_png(domain_scores)
+        story.append(Image(radar_buf, width=140*mm, height=140*mm))
+        story.append(Spacer(1, 6*mm))
+        bar_buf = create_bar_png(domain_scores)
+        story.append(Image(bar_buf, width=160*mm, height=60*mm))
+        story.append(PageBreak())
+
+    # Detailed per domain (box + short note + subdomain table)
+    for d in range(1, 9):
+        s = domain_scores.get(d, 0.0)
+        label = interpret_label(s)
+        story.append(Paragraph(DOMAINS[d], styles["H1"]))
+        story.append(Spacer(1, 2*mm))
+
+        # coloured label: implement as tiny 1-cell table
+        tbl = Table([[f"{label} — {s:.2f}/5"]], colWidths=[160*mm])
+        tbl.setStyle(TableStyle([
+            ("BACKGROUND", (0,0), (-1,-1), colors.HexColor(pick_color_hex(s))),
+            ("TEXTCOLOR", (0,0), (-1,-1), colors.white if s < 3.6 or s >= 3.6 else colors.white),
+            ("FONTNAME", (0,0), (-1,-1), "Helvetica-Bold"),
+            ("FONTSIZE", (0,0), (-1,-1), 9),
+            ("LEFTPADDING", (0,0), (-1,-1), 6),
+            ("RIGHTPADDING", (0,0), (-1,-1), 6),
+            ("TOPPADDING", (0,0), (-1,-1), 4),
+            ("BOTTOMPADDING", (0,0), (-1,-1), 4),
+        ]))
+        story.append(tbl)
+        story.append(Spacer(1, 3*mm))
+
+        # subdomain table (if answers exist, compute subdomain averages)
+        sub_rows = [["Thema", "Score"]]
+        for sd_idx, sd_title in SUBDOMAINS[d].items():
+            val = get_subdomain_avg(answers, d, sd_idx)
+            sub_rows.append([sd_title, f"{val:.2f}" if val is not None else "–"])
+        t = Table(sub_rows, colWidths=[110*mm, 30*mm])
+        t.setStyle(TableStyle([
+            ("BACKGROUND", (0,0), (-1,0), colors.HexColor(COL_HEX["mint"])),
+            ("TEXTCOLOR", (0,0), (-1,0), colors.HexColor(COL_HEX["anthracite"])),
+            ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
+            ("FONTSIZE", (0,0), (-1,0), 9),
+            ("GRID", (0,0), (-1,-1), 0.25, colors.HexColor("#DDDDDD")),
+            ("VALIGN", (0,0), (-1,-1), "MIDDLE"),
+            ("LEFTPADDING", (0,0), (-1,-1), 4),
+            ("RIGHTPADDING", (0,0), (-1,-1), 4),
+        ]))
+        story.append(t)
+        story.append(Spacer(1, 6*mm))
+
+    # Summary table of all domains
+    story.append(PageBreak())
+    story.append(Paragraph("Uebersicht: Alle Bereiche", styles["H1"]))
+    table_data = [["Nr", "Bereich", "Score", "Interpretation"]]
+    for d in range(1, 9):
+        s = domain_scores.get(d, 0.0)
+        table_data.append([str(d), DOMAINS[d], f"{s:.2f}", interpret_label(s)])
+    sum_table = Table(table_data, colWidths=[15*mm, 85*mm, 25*mm, 45*mm])
+    sum_table.setStyle(TableStyle([
+        ("BACKGROUND", (0,0), (-1,0), colors.HexColor(COL_HEX["mint"])),
+        ("TEXTCOLOR", (0,0), (-1,0), colors.HexColor(COL_HEX["anthracite"])),
+        ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
+        ("GRID", (0,0), (-1,-1), 0.25, colors.HexColor("#DDDDDD")),
+        ("ALIGN", (2,1), (2,-1), "CENTER"),
+        ("VALIGN", (0,0), (-1,-1), "MIDDLE"),
+    ]))
+    # color interpretation cell
+    for i in range(1, len(table_data)):
+        lab = table_data[i][3]
+        hexc = pick_color_hex_from_label(lab)
+        sum_table.setStyle(TableStyle([
+            ("BACKGROUND", (3,i), (3,i), colors.HexColor(hexc)),
+            ("TEXTCOLOR", (3,i), (3,i), colors.white if lab != "Mittel" else colors.black),
+            ("FONTNAME", (3,i), (3,i), "Helvetica-Bold"),
+        ]))
+    story.append(sum_table)
+    story.append(Spacer(1, 6*mm))
+    story.append(Paragraph("Legende: 4.2-5.0 Sehr gut | 3.6-4.1 Gut | 3.0-3.5 Mittel | <3.0 Verbesserungsbedarf", styles["Muted"]))
+
+    doc.build(story, onFirstPage=footer, onLaterPages=footer)
+    buf.seek(0)
+    return buf
+
+# -------------------------
+# small helper functions
+# -------------------------
+def interpret_label(score):
     if score >= 4.2:
-        return "Sehr gut", colors.HexColor("#1E6F5C")
-    elif score >= 3.6:
-        return "Gut", colors.HexColor("#2B8C69")
-    elif score >= 3.0:
-        return "Mittel", colors.HexColor("#E9B44C")
-    else:
-        return "Verbesserungsbedarf", colors.HexColor("#D9534F")
+        return "Sehr gut"
+    if score >= 3.6:
+        return "Gut"
+    if score >= 3.0:
+        return "Mittel"
+    return "Verbesserungsbedarf"
 
-def initialize_session():
-    """Initialisiert die Session State Variablen"""
-    if 'current_step' not in st.session_state:
-        st.session_state.current_step = 'wg_selection'
-    if 'wg_selected' not in st.session_state:
-        st.session_state.wg_selected = None
-    if 'answers' not in st.session_state:
-        st.session_state.answers = {}
-    if 'test_data_created' not in st.session_state:
-        st.session_state.test_data_created = False
+def pick_color_hex(score):
+    if score >= 4.2:
+        return "#1E6F5C"
+    if score >= 3.6:
+        return "#2B8C69"
+    if score >= 3.0:
+        return "#E9B44C"
+    return "#D9534F"
 
-def create_test_data():
-    """Erstellt Test-Daten für schnelles Testen"""
-    test_answers = {}
-    for domain in range(1, 9):
-        for subdomain in range(1, 5):
-            # Variierende Testdaten für realistischeres Radar-Diagramm
-            answers = ["Trifft voll zu", "Trifft zu", "Teils/teils", "Trifft nicht zu", "Trifft gar nicht zu"]
-            test_answers[(domain, subdomain)] = [
-                answers[domain % 5],
-                answers[(domain + 2) % 5]
-            ]
-    return test_answers
+def pick_color_hex_from_label(label):
+    if label == "Sehr gut":
+        return "#1E6F5C"
+    if label == "Gut":
+        return "#2B8C69"
+    if label == "Mittel":
+        return "#E9B44C"
+    return "#D9534F"
 
-def apply_custom_styles():
-    """Wendet das benutzerdefinierte Farbschema an"""
-    st.markdown(f"""
-    <style>
-    .stApp {{
-        background-color: {COLORS['mint']};
-    }}
-    .main .block-container {{
-        background-color: {COLORS['white']};
-        padding: 2rem;
-        border-radius: 10px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        margin-top: 1rem;
-        margin-bottom: 1rem;
-    }}
-    .css-1d391kg {{
-        background-color: {COLORS['light_mint']};
-    }}
-    [data-testid="stProgress"] > div > div > div:first-child {{
-        background-color: {COLORS['light_gray']} !important;
-        border-radius: 10px;
-        height: 20px;
-    }}
-    [data-testid="stProgress"] div[data-testid="stProgressBar"] {{
-        background-color: {COLORS['dark_green']} !important;
-        border-radius: 10px;
-        height: 20px;
-    }}
-    .stRadio > div {{
-        background-color: {COLORS['dark_green']};
-        color: {COLORS['white']};
-        padding: 15px;
-        border-radius: 8px;
-        border-left: 4px solid {COLORS['mint']};
-    }}
-    .stRadio label {{
-        color: {COLORS['white']} !important;
-        font-weight: 500;
-    }}
-    .stRadio [data-testid="stMarkdownContainer"] p {{
-        color: {COLORS['white']} !important;
-    }}
-    .stSelectbox > div > div {{
-        background-color: {COLORS['white']};
-        border: 1px solid {COLORS['anthrazit']};
-        border-radius: 6px;
-    }}
-    .stButton>button {{
-        background-color: {COLORS['dark_green']};
-        color: {COLORS['white']};
-        border: none;
-        border-radius: 8px;
-        padding: 10px 20px;
-        font-weight: 500;
-    }}
-    .stButton>button:hover {{
-        background-color: {COLORS['anthrazit']};
-        color: {COLORS['white']};
-    }}
-    .main-header {{
-        color: {COLORS['anthrazit']};
-        border-bottom: 2px solid {COLORS['dark_green']};
-        padding-bottom: 10px;
-    }}
-    .stSuccess {{
-        background-color: {COLORS['dark_green']} !important;
-        color: {COLORS['white']} !important;
-        border: 1px solid {COLORS['dark_green']};
-        border-radius: 8px;
-        padding: 15px;
-    }}
-    .stInfo {{
-        background-color: {COLORS['dark_green']} !important;
-        color: {COLORS['white']} !important;
-        border: 1px solid {COLORS['dark_green']};
-        border-radius: 8px;
-        border-left: 4px solid {COLORS['mint']};
-        padding: 15px;
-    }}
-    .stWarning {{
-        background-color: {COLORS['dark_green']} !important;
-        color: {COLORS['white']} !important;
-        border: 1px solid {COLORS['dark_green']};
-        border-radius: 8px;
-        padding: 15px;
-    }}
-    .stError {{
-        background-color: #D9534F;
-        color: {COLORS['white']} !important;
-        border: 1px solid #D9534F;
-        border-radius: 8px;
-        padding: 15px;
-    }}
-    .streamlit-expanderHeader {{
-        background-color: {COLORS['dark_green']};
-        color: {COLORS['white']} !important;
-        border: 1px solid {COLORS['mint']};
-        border-radius: 8px;
-    }}
-    .streamlit-expanderContent {{
-        background-color: {COLORS['light_gray']};
-        border-radius: 0 0 8px 8px;
-    }}
-    .stSuccess svg, .stInfo svg, .stWarning svg {{
-        fill: {COLORS['white']} !important;
-        color: {COLORS['white']} !important;
-    }}
-    .stSuccess [data-testid="stMarkdownContainer"] p,
-    .stInfo [data-testid="stMarkdownContainer"] p,
-    .stWarning [data-testid="stMarkdownContainer"] p {{
-        color: {COLORS['white']} !important;
-    }}
-    </style>
-    """, unsafe_allow_html=True)
+def get_subdomain_avg(answers, domain, subdomain):
+    v = answers.get((domain, subdomain))
+    if not v:
+        return None
+    nums = [SCORE_MAP.get(x) for x in v if SCORE_MAP.get(x) is not None]
+    return (sum(nums)/len(nums)) if nums else None
 
-def render_wg_selection():
-    """WG Auswahl Schritt"""
-    st.markdown('<div class="main-header">', unsafe_allow_html=True)
-    st.title("🏠 Mitarbeiterbefragung Hausverbund A")
-    st.markdown('</div>', unsafe_allow_html=True)
-    
-    st.markdown("""
-    Im Mai 2025 fand die kantonale Personalbefragung der Institutionen für Menschen mit Behinderungen statt. 
-    Die Ergebnisse für unseren Bereich waren insgesamt erfreulich und haben sowohl Stärken als auch Entwicklungsbereiche aufgezeigt.
+# -------------------------
+# Streamlit UI
+# -------------------------
+def create_test_answers():
+    # create realistic variation
+    pool = ["Trifft voll zu", "Trifft zu", "Teils/teils", "Trifft nicht zu", "Trifft gar nicht zu"]
+    out = {}
+    for d in range(1,9):
+        for sd in range(1,5):
+            # generate two answers per subdomain
+            out[(d, sd)] = [pool[(d + sd) % len(pool)], pool[(d*2 + sd) % len(pool)]]
+    return out
 
-    **Um diese Ergebnisse besser zu verstehen**, führen wir nun eine vertiefte Befragung in unserem **Hausverbund A** durch. 
-    Wir möchten genauer nachvollziehen:
-    - Was hinter den positiven Rückmeldungen steht  
-    - Wo die Ursachen für kritischere Bewertungen liegen
-
-    **Wichtig:** Es geht nicht um die Beurteilung Einzelner, sondern um eine strukturierte Analyse der 
-    Arbeitsbedingungen, Belastungen und Teamstärken **in unserem Hausverbund A**.
-
-    **Deine Teilnahme ist wertvoll**, denn nur durch eine breite Beteiligung entsteht ein realistisches Bild 
-    unserer Situation **im Hausverbund A**. Je genauer die Rückmeldungen, desto besser können wir verstehen, 
-    was im Alltag gut funktioniert und wo Verbesserungen sinnvoll sind.
-
-    Vielen Dank für deine Mitarbeit und die investierte Zeit!
-    """)
-    
-    # TEST-BUTTON FÜR SCHNELLEN TEST
-    st.write("---")
-    st.subheader("🛠️ Testbereich")
-    
+def render_selection():
+    st.title(PAGE_TITLE)
+    st.write("Klinisch clean theme (white + mint + grey).")
     col1, col2 = st.columns(2)
-    
     with col1:
-        if st.button("🚀 Schnelltest: Mit Testdaten füllen", type="secondary"):
-            st.session_state.answers = create_test_data()
-            st.session_state.wg_selected = "WG Fliegenpilz"
-            st.session_state.current_step = 'results'
-            st.session_state.test_data_created = True
-            st.rerun()
-    
+        if st.button("🚀 Schnelltest: Testdaten"):
+            st.session_state.answers = create_test_answers()
+            st.session_state.wg = "WG Fliegenpilz"
+            st.session_state.step = "results"
+            st.experimental_rerun()
     with col2:
-        if st.button("📋 Normale Befragung starten", type="primary"):
-            st.session_state.current_step = 'survey'
-            st.rerun()
-    
-    if st.session_state.get('test_data_created', False):
-        st.success("✅ Test-Daten wurden erstellt! Du wirst zur Ergebnis-Seite weitergeleitet...")
-    
-    st.subheader("Bitte wähle deine Abteilung aus")
-    
-    selected_wg = st.selectbox(
-        "Abteilung:",
-        WG_OPTIONS,
-        key="wg_select"
-    )
-    
-    st.info("💡 Die Befragung ist komplett anonym. Deine Antworten können nicht dir persönlich zugeordnet werden.")
-    
-    if st.button("Befragung starten"):
-        st.session_state.wg_selected = selected_wg
-        st.session_state.current_step = 'survey'
-        st.rerun()
+        if st.button("📋 Start echte Befragung"):
+            st.session_state.step = "survey"
+            st.experimental_rerun()
+    st.write("---")
+    st.selectbox("Wähle Abteilung", WG_OPTIONS, key="wg_select")
+    if st.button("Weiter"):
+        st.session_state.wg = st.session_state.wg_select
+        st.session_state.step = "survey"
+        st.experimental_rerun()
 
 def render_survey():
-    """Haupt-Befragung mit allen Fragen"""
-    st.markdown('<div class="main-header">', unsafe_allow_html=True)
-    st.title("📝 Mitarbeiterbefragung")
-    st.markdown('</div>', unsafe_allow_html=True)
-    
-    st.write(f"**Abteilung:** {st.session_state.wg_selected}")
-    
-    # Aktuelle unbeantwortete Frage finden
+    st.header("Fragen")
+    st.write("Kurz: beantworte pro Block die Items.")
     current_key = None
-    for domain in range(1, 9):
-        for subdomain in range(1, 5):
-            if (domain, subdomain) not in st.session_state.answers:
-                current_key = (domain, subdomain)
+    for d in range(1,9):
+        for sd in range(1,5):
+            if (d, sd) not in st.session_state.get("answers", {}):
+                current_key = (d, sd)
                 break
         if current_key:
             break
-    
     if not current_key:
-        st.session_state.current_step = 'results'
-        st.rerun()
+        st.session_state.step = "results"
+        st.experimental_rerun()
         return
-    
-    domain, subdomain = current_key
-    questions = QUESTIONS.get(current_key, [])
-    
-    # Fortschrittsberechnung
-    total_questions = len(QUESTIONS)
-    completed_questions = len(st.session_state.answers)
-    progress = completed_questions / total_questions
-    
-    st.progress(progress)
-    st.write(f"Fortschritt: {completed_questions + 1} von {total_questions} Fragen")
-    
-    # Frage anzeigen
-    st.subheader("Bitte beantworte die folgenden Fragen:")
-    
-    answers = []
-    for i, question in enumerate(questions):
-        st.write(f"**{question}**")
-        answer = st.radio(
-            f"Deine Antwort:",
-            options=["Trifft voll zu", "Trifft zu", "Teils/teils", "Trifft nicht zu", "Trifft gar nicht zu"],
-            key=f"q_{domain}_{subdomain}_{i}",
-            index=None
-        )
-        answers.append(answer)
-    
-    # Navigation
+    d, sd = current_key
+    st.subheader(f"{DOMAINS[d]} — {SUBDOMAINS[d][sd]}")
+    opts = ["Trifft voll zu", "Trifft zu", "Teils/teils", "Trifft nicht zu", "Trifft gar nicht zu"]
+    a1 = st.radio("Item 1", opts, key=f"q_{d}_{sd}_0")
+    a2 = st.radio("Item 2", opts, key=f"q_{d}_{sd}_1")
     col1, col2 = st.columns(2)
-    
     with col1:
-        if st.session_state.answers:
-            if st.button("← Zurück"):
-                last_key = list(st.session_state.answers.keys())[-1]
-                del st.session_state.answers[last_key]
-                st.rerun()
-    
+        if st.button("← Zurück"):
+            if st.session_state.get("answers"):
+                keys = list(st.session_state.answers.keys())
+                if keys:
+                    st.session_state.answers.pop(keys[-1], None)
+                    st.experimental_rerun()
     with col2:
-        all_answered = all(answers) and len(answers) > 0
-        if all_answered:
+        if a1 and a2:
             if st.button("Weiter →"):
-                st.session_state.answers[current_key] = answers
-                st.rerun()
-        else:
-            st.button("Weiter →", disabled=True)
-
-def calculate_scores():
-    """Berechnet die Scores aus den Antworten"""
-    scoring = {
-        "Trifft voll zu": 5,
-        "Trifft zu": 4,
-        "Teils/teils": 3, 
-        "Trifft nicht zu": 2,
-        "Trifft gar nicht zu": 1
-    }
-    
-    domain_scores = {}
-    for (domain, subdomain), answers in st.session_state.answers.items():
-        if domain not in domain_scores:
-            domain_scores[domain] = []
-        
-        for answer in answers:
-            if answer in scoring:
-                domain_scores[domain].append(scoring[answer])
-    
-    avg_scores = {}
-    for domain, scores in domain_scores.items():
-        if scores:
-            avg_scores[domain] = sum(scores) / len(scores)
-    
-    return avg_scores
-
-def create_radar_chart(scores):
-    """Erstellt ein Radar-Diagramm für die PDF"""
-    # Daten vorbereiten
-    categories = list(DOMAINS.values())
-    values = [scores.get(i, 0) for i in range(1, 9)]
-    
-    # Anzahl Kategorien
-    N = len(categories)
-    
-    # Winkel für jede Achse
-    angles = [n / float(N) * 2 * np.pi for n in range(N)]
-    angles += angles[:1]  # Schliesse den Kreis
-    
-    # Werte für den Plot (Kreis schliessen)
-    values += values[:1]
-    
-    # Plot erstellen
-    fig, ax = plt.subplots(figsize=(10, 10), subplot_kw=dict(projection='polar'))
-    
-    # Radar plotten
-    ax.plot(angles, values, 'o-', linewidth=2, label='Bewertung', color=COLORS['dark_green'])
-    ax.fill(angles, values, alpha=0.25, color=COLORS['mint'])
-    
-    # Achsen anpassen
-    ax.set_theta_offset(np.pi / 2)
-    ax.set_theta_direction(-1)
-    
-    # Kategorien hinzufügen
-    ax.set_xticks(angles[:-1])
-    ax.set_xticklabels(categories, fontsize=9)
-    
-    # Y-Achse anpassen
-    ax.set_ylim(0, 5)
-    ax.set_yticks([1, 2, 3, 4, 5])
-    ax.set_yticklabels(['1', '2', '3', '4', '5'], fontsize=8)
-    ax.grid(True)
-    
-    # Titel
-    plt.title('Mitarbeiterbefragung - Profil der Arbeitsbereiche', 
-              size=14, color=COLORS['anthrazit'], pad=20)
-    
-    # Diagramm als Bild speichern
-    img_buffer = io.BytesIO()
-    plt.savefig(img_buffer, format='png', dpi=300, bbox_inches='tight')
-    plt.close()
-    img_buffer.seek(0)
-    return img_buffer
-
-# ---- PDF Aufbau mit platypus ----
-
-class HRDivider(Flowable):
-    """einfache Linie als Trenner"""
-    def __init__(self, width=160):
-        Flowable.__init__(self)
-        self.width = width
-
-    def draw(self):
-        self.canv.setLineWidth(1)
-        self.canv.setStrokeColor(colors.HexColor(COLORS["dark_green"]))
-        x = 0
-        y = 0
-        self.canv.line(x, y, self.width, y)
-
-def _build_styles():
-    base = getSampleStyleSheet()
-    base.add(ParagraphStyle(
-        name="TitleCustom",
-        parent=base["Title"],
-        fontName="Helvetica-Bold",
-        fontSize=20,
-        leading=24,
-        spaceAfter=12,
-        textColor=colors.HexColor(COLORS["anthrazit"])
-    ))
-    base.add(ParagraphStyle(
-        name="H1",
-        parent=base["Heading1"],
-        fontName="Helvetica-Bold",
-        fontSize=14,
-        leading=18,
-        textColor=colors.HexColor(COLORS["anthrazit"]),
-        spaceAfter=8
-    ))
-    base.add(ParagraphStyle(
-        name="Body",
-        parent=base["BodyText"],
-        fontName="Helvetica",
-        fontSize=10,
-        leading=13,
-        spaceAfter=6
-    ))
-    base.add(ParagraphStyle(
-        name="TableHeader",
-        parent=base["BodyText"],
-        fontName="Helvetica-Bold",
-        fontSize=10,
-        leading=12,
-        alignment=1,  # zentriert
-    ))
-    base.add(ParagraphStyle(
-        name="SmallMuted",
-        parent=base["BodyText"],
-        fontName="Helvetica-Oblique",
-        fontSize=8,
-        leading=10,
-        textColor=colors.gray
-    ))
-    return base
-
-def _footer(canvas_obj, doc):
-    canvas_obj.saveState()
-    width, height = A4
-    footer_text = f"Erstellt: {datetime.now().strftime('%d.%m.%Y')}   |   Seite {doc.page}"
-    canvas_obj.setFont("Helvetica", 8)
-    canvas_obj.setFillColor(colors.HexColor(COLORS["anthrazit"]))
-    canvas_obj.drawRightString(width - 20*mm, 15*mm, footer_text)
-    canvas_obj.restoreState()
-
-def create_pdf_report():
-    """Erstellt einen PDF-Report mit verbesserter Struktur und Radar-Diagramm"""
-    buffer = io.BytesIO()
-    doc = SimpleDocTemplate(
-        buffer,
-        pagesize=A4,
-        rightMargin=20*mm,
-        leftMargin=20*mm,
-        topMargin=20*mm,
-        bottomMargin=25*mm
-    )
-    styles = _build_styles()
-    story = []
-
-    # Titelblatt
-    story.append(Paragraph("Mitarbeiterbefragung - Ergebnisbericht", styles["TitleCustom"]))
-    story.append(Spacer(1, 6*mm))
-    meta = [
-        f"<b>Abteilung:</b> {st.session_state.wg_selected or 'n.a.'}",
-        f"<b>Datum:</b> {datetime.now().strftime('%d.%m.%Y')}"
-    ]
-    if st.session_state.get("test_data_created", False):
-        meta.append("<b>Hinweis:</b> Testdaten (simuliert)")
-    else:
-        meta.append("<b>Hinweis:</b> Befragung anonym")
-    for m in meta:
-        story.append(Paragraph(m, styles["Body"]))
-    story.append(Spacer(1, 8*mm))
-    story.append(HRDivider(width=160))
-    story.append(Spacer(1, 10*mm))
-
-    # Executive Summary
-    story.append(Paragraph("Zusammenfassung", styles["H1"]))
-    scores = calculate_scores()
-    if scores:
-        total_avg = sum(scores.values()) / len(scores)
-        story.append(Paragraph(f"Gesamtdurchschnitt: <b>{total_avg:.2f}/5</b>", styles["Body"]))
-        story.append(Spacer(1, 4*mm))
-        
-        # Stärken und Schwächen identifizieren
-        strengths = [d for d, s in scores.items() if s >= 4.0]
-        improvements = [d for d, s in scores.items() if s < 3.0]
-        
-        if strengths:
-            strength_text = "Stärken: " + ", ".join([DOMAINS[d] for d in strengths])
-            story.append(Paragraph(strength_text, styles["Body"]))
-        
-        if improvements:
-            improvement_text = "Entwicklungsbereiche: " + ", ".join([DOMAINS[d] for d in improvements])
-            story.append(Paragraph(improvement_text, styles["Body"]))
-    
-    story.append(PageBreak())
-
-    # Radar-Diagramm
-    story.append(Paragraph("Profilübersicht - Radar-Diagramm", styles["H1"]))
-    story.append(Spacer(1, 4*mm))
-    
-    # Radar Chart erstellen und einfügen
-    radar_chart_buffer = create_radar_chart(scores)
-    radar_img = Image(radar_chart_buffer, width=150*mm, height=150*mm)
-    story.append(radar_img)
-    
-    story.append(Spacer(1, 8*mm))
-    story.append(Paragraph(
-        "<i>Das Radar-Diagramm zeigt visuell die Stärken und Schwächen über alle Bereiche. Je weiter aussen, desto besser die Bewertung.</i>",
-        styles["SmallMuted"]
-    ))
-    story.append(PageBreak())
-
-    # Detailtabelle: Übersicht aller Bereiche
-    story.append(Paragraph("Detaillierte Übersicht", styles["H1"]))
-    story.append(Spacer(1, 4*mm))
-    
-    table_data = [["Nr", "Bereich", "Score", "Interpretation"]]
-    for d in range(1,9):
-        s = scores.get(d, 0.0)
-        label, _ = get_interpretation(s)
-        table_data.append([str(d), DOMAINS.get(d, ""), f"{s:.2f}/5", label])
-
-    table = Table(table_data, colWidths=[15*mm, 85*mm, 25*mm, 45*mm])
-    table.setStyle(TableStyle([
-        ("BACKGROUND", (0,0), (-1,0), colors.HexColor(COLORS["mint"])),
-        ("TEXTCOLOR", (0,0), (-1,0), colors.HexColor(COLORS["anthrazit"])),
-        ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
-        ("FONTSIZE", (0,0), (-1,0), 10),
-        ("GRID", (0,0), (-1,-1), 0.5, colors.HexColor(COLORS["anthrazit"])),
-        ("VALIGN", (0,0), (-1,-1), "MIDDLE"),
-        ("ALIGN", (0,0), (0,-1), "CENTER"),
-        ("ALIGN", (2,1), (2,-1), "CENTER"),
-        ("FONTSIZE", (0,1), (-1,-1), 9),
-        ("BOTTOMPADDING", (0,0), (-1,-1), 8),
-        ("TOPPADDING", (0,0), (-1,-1), 8),
-    ]))
-
-    # Bedingte Färbung für Interpretation
-    for i in range(1, len(table_data)):
-        interp = table_data[i][3]
-        if interp == "Sehr gut":
-            bg = colors.HexColor("#1E6F5C")
-            text_color = colors.white
-        elif interp == "Gut":
-            bg = colors.HexColor("#2B8C69")
-            text_color = colors.white
-        elif interp == "Mittel":
-            bg = colors.HexColor("#E9B44C")
-            text_color = colors.black
-        else:
-            bg = colors.HexColor("#D9534F")
-            text_color = colors.white
-            
-        table.setStyle(TableStyle([
-            ("BACKGROUND", (3,i), (3,i), bg),
-            ("TEXTCOLOR", (3,i), (3,i), text_color),
-            ("FONTNAME", (3,i), (3,i), "Helvetica-Bold"),
-        ]))
-
-    story.append(table)
-    story.append(Spacer(1, 10*mm))
-
-    # Legende
-    story.append(Paragraph("Interpretation der Bewertungen:", styles["H1"]))
-    legend_data = [
-        ["4.2 - 5.0", "Sehr gut", "Stabile Lage, Erhalt empfehlenswert"],
-        ["3.6 - 4.1", "Gut", "Gute Lage, punktuelle Optimierung möglich"],
-        ["3.0 - 3.5", "Mittel", "Gezielte Massnahmen priorisieren"],
-        ["1.0 - 2.9", "Verbesserungsbedarf", "Handlungsbedarf hoch"]
-    ]
-    
-    legend_table = Table(legend_data, colWidths=[25*mm, 35*mm, 100*mm])
-    legend_table.setStyle(TableStyle([
-        ("BACKGROUND", (0,0), (-1,0), colors.HexColor(COLORS["mint"])),
-        ("TEXTCOLOR", (0,0), (-1,0), colors.HexColor(COLORS["anthrazit"])),
-        ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
-        ("GRID", (0,0), (-1,-1), 0.5, colors.HexColor(COLORS["anthrazit"])),
-        ("FONTSIZE", (0,0), (-1,-1), 8),
-        ("BOTTOMPADDING", (0,0), (-1,-1), 6),
-        ("TOPPADDING", (0,0), (-1,-1), 6),
-    ]))
-    
-    story.append(legend_table)
-
-    # Build
-    doc.build(story, onFirstPage=_footer, onLaterPages=_footer)
-    buffer.seek(0)
-    return buffer
+                st.session_state.answers = st.session_state.get("answers", {})
+                st.session_state.answers[(d, sd)] = [a1, a2]
+                st.experimental_rerun()
 
 def render_results():
-    """Zeigt die Ergebnisse und PDF-Download an"""
-    st.markdown('<div class="main-header">', unsafe_allow_html=True)
-    st.title("✅ Befragung abgeschlossen!")
-    st.markdown('</div>', unsafe_allow_html=True)
-    
-    if st.session_state.get('test_data_created', False):
-        st.warning("🛠️ **Testmodus** - Dies sind simulierte Daten")
-    else:
-        st.success("Vielen Dank für deine Teilnahme an der Befragung!")
-    
-    st.subheader("Zusammenfassung deiner Antworten")
-    
-    scores = calculate_scores()
-    
-    # Radar Chart in Streamlit anzeigen
-    st.subheader("📊 Profilübersicht - Radar-Diagramm")
-    
-    # Daten für das Radar-Diagramm
-    categories = list(DOMAINS.values())
-    values = [scores.get(i, 0) for i in range(1, 9)]
-    
-    fig, ax = plt.subplots(figsize=(10, 8), subplot_kw=dict(projection='polar'))
-    
-    # Anzahl Kategorien und Winkel
-    N = len(categories)
-    angles = [n / float(N) * 2 * np.pi for n in range(N)]
-    angles += angles[:1]
-    values += values[:1]
-    
-    # Plot
-    ax.plot(angles, values, 'o-', linewidth=2, label='Bewertung', color=COLORS['dark_green'])
-    ax.fill(angles, values, alpha=0.25, color=COLORS['mint'])
-    
-    # Achsen anpassen
-    ax.set_theta_offset(np.pi / 2)
-    ax.set_theta_direction(-1)
-    ax.set_xticks(angles[:-1])
-    ax.set_xticklabels(categories, fontsize=10)
-    ax.set_ylim(0, 5)
-    ax.set_yticks([1, 2, 3, 4, 5])
-    ax.set_yticklabels(['1', '2', '3', '4', '5'])
-    ax.grid(True)
-    ax.set_title('Profil der Arbeitsbereiche', size=14, pad=20)
-    
-    st.pyplot(fig)
-    plt.close()
-    
-    # Detailtabelle
-    st.subheader("📋 Detaillierte Auswertung")
-    
-    for domain in range(1, 9):
-        score = scores.get(domain, 0)
-        interpretation, color = get_interpretation(score)
-        st.write(f"**{DOMAINS[domain]}:** {score:.2f}/5 Punkte - *{interpretation}*")
-        st.progress(score / 5)
-    
-    # PDF erstellen
-    pdf_buffer = create_pdf_report()
-    
-    st.subheader("📄 Bericht herunterladen")
-    
-    st.download_button(
-        label="📊 PDF Bericht herunterladen",
-        data=pdf_buffer,
-        file_name=f"Befragung_{st.session_state.wg_selected}_{datetime.now().strftime('%Y%m%d')}.pdf",
-        mime="application/pdf",
-        type="primary"
-    )
-    
-    # Neue Befragung starten
-    st.write("---")
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        if st.button("🔄 Neue Test-Befragung"):
-            st.session_state.answers = create_test_data()
-            st.session_state.test_data_created = True
-            st.rerun()
-    
-    with col2:
-        if st.button("🏠 Neue echte Befragung"):
-            for key in list(st.session_state.keys()):
-                del st.session_state[key]
-            st.rerun()
+    st.header("Resultate")
+    if st.session_state.get("test_mode"):
+        st.warning("Testdaten aktiv")
+    answers = st.session_state.get("answers", {})
+    domain_scores = calculate_scores_from_answers(answers)
+    for d in range(1,9):
+        sc = domain_scores.get(d, 0.0)
+        st.subheader(DOMAINS[d])
+        st.write(f"Score: {sc:.2f} — {interpret_label(sc)}")
+        st.progress(sc / 5.0 if sc > 0 else 0.0)
+    pdf_buf = make_pdf_buffer(st.session_state.get("wg", "n.a."), answers, include_charts=True, logo_path=LOGO_PATH)
+    st.download_button("📄 PDF Bericht herunterladen", data=pdf_buf, file_name=f"Befragung_{st.session_state.get('wg','n.a.')}_{datetime.now().strftime('%Y%m%d')}.pdf", mime="application/pdf")
+
+# -------------------------
+# Boot
+# -------------------------
+def init_session_defaults():
+    if "step" not in st.session_state:
+        st.session_state.step = "selection"
+    if "answers" not in st.session_state:
+        st.session_state.answers = {}
+    if "wg" not in st.session_state:
+        st.session_state.wg = None
+    if "test_mode" not in st.session_state:
+        st.session_state.test_mode = False
 
 def main():
-    """Hauptfunktion der Anwendung"""
-    st.set_page_config(
-        page_title="Mitarbeiterbefragung",
-        page_icon="📊",
-        layout="centered",
-        initial_sidebar_state="collapsed"
-    )
-    
-    apply_custom_styles()
-    initialize_session()
-    
-    if st.session_state.current_step == 'wg_selection':
-        render_wg_selection()
-    elif st.session_state.current_step == 'survey':
+    st.set_page_config(page_title=PAGE_TITLE, layout="centered", initial_sidebar_state="collapsed")
+    init_session_defaults()
+    st.markdown(f"<style> .reportview-container .main .block-container{{background-color: {COL_HEX['white']};}}</style>", unsafe_allow_html=True)
+
+    if st.session_state.step == "selection":
+        render_selection()
+    elif st.session_state.step == "survey":
         render_survey()
-    elif st.session_state.current_step == 'results':
+    elif st.session_state.step == "results":
         render_results()
 
 if __name__ == "__main__":
