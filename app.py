@@ -731,7 +731,7 @@ def create_pdf_report():
     
     story.append(Spacer(1, 8*mm))
     story.append(Paragraph(
-        "<i>Das Radar-Diagramm zeigt visuell die Stärken und Schwächen across alle Bereiche. Je weiter außen, desto besser die Bewertung.</i>",
+        "<i>Das Radar-Diagramm zeigt visuell die Stärken und Schwächen über alle Bereiche. Je weiter außen, desto besser die Bewertung.</i>",
         styles["SmallMuted"]
     ))
     story.append(PageBreak())
