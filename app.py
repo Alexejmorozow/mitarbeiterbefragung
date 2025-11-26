@@ -129,7 +129,7 @@ QUESTIONS = {
     ],
     (3, 3): [
         "Zuständigkeiten und Verantwortungen sind klar geregelt.",
-        "Jeder weiss, what zu tun ist."
+        "Jeder weiss, was zu tun ist."
     ],
     (3, 4): [
         "Konflikte werden offen angesprochen.",
