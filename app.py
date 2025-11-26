@@ -111,7 +111,7 @@ QUESTIONS = {
     ],
     (2, 3): [
         "Schichtübergaben sind vollständig und verständlich.",
-        "Wichtige Infos gehen zwischen Früh-, Spät- und Nachtdienst nicht verloren."
+        "Wichtige Infos gehen zwischen Früh-, Mittel- und Spätdienst nicht verloren."
     ],
     (2, 4): [
         "Ich habe ausreichend Möglichkeiten zur Weiterentwicklung.",
@@ -196,7 +196,7 @@ QUESTIONS = {
         "Kurzfristige Änderungen sind die Ausnahme."
     ],
     (7, 2): [
-        "Wochenend- und Nachtdienste sind fair verteilt.",
+        "Wochenend- und Spätdienste sind fair verteilt.",
         "Die Belastung ist im Team ausgewogen."
     ],
     (7, 3): [
