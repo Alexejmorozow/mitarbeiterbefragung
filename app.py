@@ -2,13 +2,14 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 import json
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import A4
-from reportlab.platypus import Table, TableStyle, SimpleDocTemplate, Paragraph, Spacer
-from reportlab.lib import colors
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.units import cm
 import io
+from reportlab.platypus import (
+    SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak, Image, Flowable
+)
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib import colors
+from reportlab.lib.units import mm, cm
 
 # Konfiguration
 WG_OPTIONS = [
@@ -404,7 +405,7 @@ def render_wg_selection():
 
     **Deine Teilnahme ist wertvoll**, denn nur durch eine breite Beteiligung entsteht ein realistisches Bild 
     unserer Situation **im Hausverbund A**. Je genauer die Rückmeldungen, desto besser können wir verstehen, 
-    what im Alltag gut funktioniert und wo Verbesserungen sinnvoll sind.
+    was im Alltag gut funktioniert und wo Verbesserungen sinnvoll sind.
 
     Vielen Dank für deine Mitarbeit und die investierte Zeit!
     """)
@@ -539,274 +540,233 @@ def calculate_scores():
     
     return avg_scores
 
-def create_visual_score_bar(score, width=200, height=20):
-    """Erstellt einen visuellen Score-Balken für die PDF"""
-    # Farben basierend auf Score
-    if score >= 4.2:
-        color = colors.HexColor("#1E6F5C")  # Sehr gut
-    elif score >= 3.6:
-        color = colors.HexColor("#2B8C69")   # Gut
-    elif score >= 3.0:
-        color = colors.HexColor("#E9B44C")   # Mittel
-    else:
-        color = colors.HexColor("#D9534F")   # Verbesserungsbedarf
-    
-    return color, score / 5.0  # Rückgabe Farbe und Prozentsatz
+# ---- PDF Aufbau mit platypus ----
+
+class HRDivider(Flowable):
+    """einfache Linie als Trenner"""
+    def __init__(self, width=160):
+        Flowable.__init__(self)
+        self.width = width
+
+    def draw(self):
+        self.canv.setLineWidth(1)
+        self.canv.setStrokeColor(colors.HexColor(COLORS["dark_green"]))
+        x = 0
+        y = 0
+        self.canv.line(x, y, self.width, y)
+
+def _build_styles():
+    base = getSampleStyleSheet()
+    base.add(ParagraphStyle(
+        name="TitleCustom",
+        parent=base["Title"],
+        fontName="Helvetica-Bold",
+        fontSize=20,
+        leading=24,
+        spaceAfter=12,
+        textColor=colors.HexColor(COLORS["anthrazit"])
+    ))
+    base.add(ParagraphStyle(
+        name="H1",
+        parent=base["Heading1"],
+        fontName="Helvetica-Bold",
+        fontSize=14,
+        leading=18,
+        textColor=colors.HexColor(COLORS["anthrazit"]),
+        spaceAfter=8
+    ))
+    base.add(ParagraphStyle(
+        name="Body",
+        parent=base["BodyText"],
+        fontName="Helvetica",
+        fontSize=10,
+        leading=13,
+        spaceAfter=6
+    ))
+    base.add(ParagraphStyle(
+        name="TableHeader",
+        parent=base["BodyText"],
+        fontName="Helvetica-Bold",
+        fontSize=10,
+        leading=12,
+        alignment=1,  # zentriert
+    ))
+    base.add(ParagraphStyle(
+        name="SmallMuted",
+        parent=base["BodyText"],
+        fontName="Helvetica-Oblique",
+        fontSize=8,
+        leading=10,
+        textColor=colors.gray
+    ))
+    return base
+
+def _footer(canvas_obj, doc):
+    canvas_obj.saveState()
+    width, height = A4
+    footer_text = f"Erstellt: {datetime.now().strftime('%d.%m.%Y')}   |   Seite {doc.page}"
+    canvas_obj.setFont("Helvetica", 8)
+    canvas_obj.setFillColor(colors.HexColor(COLORS["anthrazit"]))
+    canvas_obj.drawRightString(width - 20*mm, 15*mm, footer_text)
+    canvas_obj.restoreState()
 
 def create_pdf_report():
-    """Erstellt einen verbesserten PDF-Report mit professionellem Design"""
-    try:
-        buffer = io.BytesIO()
-        doc = SimpleDocTemplate(buffer, pagesize=A4, 
-                              topMargin=2*cm, 
-                              bottomMargin=2*cm,
-                              leftMargin=1.5*cm,
-                              rightMargin=1.5*cm)
-        
-        styles = getSampleStyleSheet()
-        story = []
-        
-        # Titel
-        title_style = ParagraphStyle(
-            'CustomTitle',
-            parent=styles['Heading1'],
-            fontSize=18,
-            textColor=colors.HexColor(COLORS['anthrazit']),
-            spaceAfter=30,
-            alignment=1  # Zentriert
-        )
-        title = Paragraph("Mitarbeiterbefragung - Ergebnisbericht", title_style)
-        story.append(title)
-        
-        # Untertitel
-        subtitle_style = ParagraphStyle(
-            'CustomSubtitle',
-            parent=styles['Heading2'],
-            fontSize=12,
-            textColor=colors.HexColor(COLORS['anthrazit']),
-            spaceAfter=20,
-            alignment=1
-        )
-        subtitle = Paragraph(f"Abteilung: {st.session_state.wg_selected}", subtitle_style)
-        story.append(subtitle)
-        
-        # Metadaten
-        meta_style = ParagraphStyle(
-            'MetaStyle',
-            parent=styles['Normal'],
-            fontSize=10,
-            textColor=colors.gray,
-            alignment=1,
-            spaceAfter=30
-        )
-        meta_text = f"Datum: {datetime.now().strftime('%d.%m.%Y %H:%M')} | "
-        if st.session_state.get('test_data_created', False):
-            meta_text += "Testbericht mit simulierten Daten"
-        else:
-            meta_text += "Anonyme Befragung"
-        
-        story.append(Paragraph(meta_text, meta_style))
-        story.append(Spacer(1, 20))
-        
-        # Gesamtergebnis-Box
-        scores = calculate_scores()
-        if scores:
-            total_avg = sum(scores.values()) / len(scores)
-            overall_interpretation, overall_color = get_interpretation(total_avg)
-            
-            # Gesamtergebnis Container
-            overall_style = ParagraphStyle(
-                'OverallStyle',
-                parent=styles['Normal'],
-                fontSize=12,
-                textColor=colors.white,
-                backColor=overall_color,
-                borderPadding=10,
-                spaceAfter=20,
-                alignment=1
-            )
-            
-            overall_text = f"<b>Gesamtergebnis: {total_avg:.2f}/5 Punkte - {overall_interpretation}</b>"
-            story.append(Paragraph(overall_text, overall_style))
-            story.append(Spacer(1, 10))
-        
-        # Legende
-        legend_style = ParagraphStyle(
-            'LegendStyle',
-            parent=styles['Normal'],
-            fontSize=8,
-            textColor=colors.gray,
-            alignment=1,
-            spaceAfter=15
-        )
-        legend_text = "Skala: 1 = Trifft gar nicht zu | 3 = Teils/teils | 5 = Trifft voll zu"
-        story.append(Paragraph(legend_text, legend_style))
-        story.append(Spacer(1, 20))
-        
-        # Detailtabelle mit verbesserter Visualisierung
-        table_data = []
-        
-        # Tabellenkopf
-        header_style = [
-            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor(COLORS['dark_green'])),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 10),
-            ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
-            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor(COLORS['light_gray'])]),
-            ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
-        ]
-        
-        table_data.append(['Bereich', 'Themenbereich', 'Score', 'Bewertung', 'Visualisierung'])
-        
-        for domain in range(1, 9):
-            score = scores.get(domain, 0)
-            interpretation, color = get_interpretation(score)
-            bar_color, percentage = create_visual_score_bar(score)
-            
-            # Score-Text mit Farbe
-            score_text = f"{score:.2f}/5"
-            
-            # Visuelle Darstellung als Text-Balken
-            filled_chars = int(percentage * 10)  # 10 Zeichen für den Balken
-            visual_bar = "█" * filled_chars + "░" * (10 - filled_chars)
-            
-            table_data.append([
-                f"Bereich {domain}",
-                DOMAINS[domain],
-                score_text,
-                interpretation,
-                visual_bar
-            ])
-            
-            # Farbe für die Bewertungsspalte
-            header_style.append(('BACKGROUND', (3, domain), (3, domain), color))
-            header_style.append(('TEXTCOLOR', (3, domain), (3, domain), colors.white))
-            header_style.append(('FONTNAME', (3, domain), (3, domain), 'Helvetica-Bold'))
-            
-            # Farbe für die Visualisierungsspalte
-            header_style.append(('TEXTCOLOR', (4, domain), (4, domain), bar_color))
-            header_style.append(('FONTNAME', (4, domain), (4, domain), 'Courier-Bold'))
-        
-        # Tabelle erstellen
-        domain_table = Table(table_data, colWidths=[50, 180, 50, 80, 80])
-        domain_table.setStyle(TableStyle(header_style))
-        story.append(domain_table)
-        story.append(Spacer(1, 30))
-        
-        # Stärken und Entwicklungsbereiche
-        if scores:
-            strengths = [(d, s) for d, s in scores.items() if s >= 4.0]
-            weaknesses = [(d, s) for d, s in scores.items() if s < 3.0]
-            
-            col1, col2 = [], []
-            
-            # Stärken
-            if strengths:
-                strengths_style = ParagraphStyle(
-                    'StrengthsStyle',
-                    parent=styles['Normal'],
-                    fontSize=10,
-                    textColor=colors.HexColor("#1E6F5C"),
-                    leftIndent=10,
-                    spaceAfter=5
-                )
-                col1.append(Paragraph("<b>✅ Stärken</b>", strengths_style))
-                for domain, score in sorted(strengths, key=lambda x: x[1], reverse=True):
-                    col1.append(Paragraph(f"• {DOMAINS[domain]} ({score:.2f}/5)", strengths_style))
-            else:
-                col1.append(Paragraph("<b>✅ Stärken</b>", strengths_style))
-                col1.append(Paragraph("Keine besonderen Stärken identifiziert", strengths_style))
-            
-            # Entwicklungsbereiche
-            if weaknesses:
-                weaknesses_style = ParagraphStyle(
-                    'WeaknessesStyle',
-                    parent=styles['Normal'],
-                    fontSize=10,
-                    textColor=colors.HexColor("#D9534F"),
-                    leftIndent=10,
-                    spaceAfter=5
-                )
-                col2.append(Paragraph("<b>📈 Entwicklungsbereiche</b>", weaknesses_style))
-                for domain, score in sorted(weaknesses, key=lambda x: x[1]):
-                    col2.append(Paragraph(f"• {DOMAINS[domain]} ({score:.2f}/5)", weaknesses_style))
-            else:
-                col2.append(Paragraph("<b>📈 Entwicklungsbereiche</b>", weaknesses_style))
-                col2.append(Paragraph("Keine kritischen Bereiche", weaknesses_style))
-            
-            # Zwei-Spalten-Layout für Analyse
-            from reportlab.platypus import KeepInFrame
-            
-            analysis_table_data = [
-                [KeepInFrame(200, 100, col1), KeepInFrame(200, 100, col2)]
-            ]
-            
-            analysis_table = Table(analysis_table_data, colWidths=[250, 250])
-            analysis_table.setStyle(TableStyle([
-                ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-                ('LEFTPADDING', (0, 0), (-1, -1), 10),
-                ('RIGHTPADDING', (0, 0), (-1, -1), 10),
-                ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
-            ]))
-            
-            story.append(Paragraph("<b>Analyse</b>", styles['Heading2']))
-            story.append(Spacer(1, 10))
-            story.append(analysis_table)
-            story.append(Spacer(1, 20))
-        
-        # Interpretationstabelle
-        interpretation_data = [
-            ['Bewertung', 'Score-Bereich', 'Beschreibung'],
-            ['Sehr gut', '4.2 - 5.0', 'Ausgezeichnete Ergebnisse, die beibehalten werden sollten'],
-            ['Gut', '3.6 - 4.1', 'Positive Ergebnisse mit geringem Verbesserungspotential'],
-            ['Mittel', '3.0 - 3.5', 'Akzeptable Ergebnisse mit Entwicklungsmöglichkeiten'],
-            ['Verbesserungsbedarf', '1.0 - 2.9', 'Kritische Bereiche, die prioritär angegangen werden sollten']
-        ]
-        
-        interpretation_table = Table(interpretation_data, colWidths=[80, 60, 260])
-        interpretation_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor(COLORS['anthrazit'])),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('BACKGROUND', (0, 1), (0, 1), colors.HexColor("#1E6F5C")),
-            ('BACKGROUND', (0, 2), (0, 2), colors.HexColor("#2B8C69")),
-            ('BACKGROUND', (0, 3), (0, 3), colors.HexColor("#E9B44C")),
-            ('BACKGROUND', (0, 4), (0, 4), colors.HexColor("#D9534F")),
-            ('TEXTCOLOR', (0, 1), (0, 4), colors.white),
-            ('FONTNAME', (0, 1), (0, 4), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, -1), 8),
-            ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
-            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+    """Erstellt einen PDF-Report mit verbesserter Struktur"""
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=A4,
+        rightMargin=20*mm,
+        leftMargin=20*mm,
+        topMargin=20*mm,
+        bottomMargin=25*mm
+    )
+    styles = _build_styles()
+    story = []
+
+    # Titelblatt
+    story.append(Paragraph("Mitarbeiterbefragung - Ergebnisbericht", styles["TitleCustom"]))
+    story.append(Spacer(1, 6*mm))
+    meta = [
+        f"<b>Abteilung:</b> {st.session_state.wg_selected or 'n.a.'}",
+        f"<b>Datum:</b> {datetime.now().strftime('%d.%m.%Y')}"
+    ]
+    if st.session_state.get("test_data_created", False):
+        meta.append("<b>Hinweis:</b> Testdaten (simuliert)")
+    else:
+        meta.append("<b>Hinweis:</b> Befragung anonym")
+    for m in meta:
+        story.append(Paragraph(m, styles["Body"]))
+    story.append(Spacer(1, 8*mm))
+    story.append(HRDivider(width=160))
+    story.append(Spacer(1, 10*mm))
+
+    # Executive Summary
+    story.append(Paragraph("Kurze Zusammenfassung", styles["H1"]))
+    scores = calculate_scores()
+    if scores:
+        total_avg = sum(scores.values()) / len(scores)
+        story.append(Paragraph(f"Gesamtdurchschnitt: <b>{total_avg:.2f}/5</b>", styles["Body"]))
+    else:
+        story.append(Paragraph("Keine Daten vorhanden.", styles["Body"]))
+    story.append(Spacer(1, 4*mm))
+
+    story.append(Paragraph(
+        "Diese Auswertung gibt kompakt einen Überblick pro Themenbereich. Farben deuten die Dringlichkeit an.",
+        styles["Body"]
+    ))
+    story.append(PageBreak())
+
+    # Ergebnisse pro Bereich als Karte
+    for domain in range(1, 9):
+        domain_title = DOMAINS.get(domain, f"Bereich {domain}")
+        score = scores.get(domain, 0.0)
+        label, col = get_interpretation(score)
+
+        story.append(Paragraph(domain_title, styles["H1"]))
+        story.append(Spacer(1, 2*mm))
+
+        # farbige Box: einfache Darstellung via Tabelle mit 1 Zelle
+        box_data = [[f"{label}  —  {score:.2f}/5" ]]
+        box = Table(box_data, colWidths=[160*mm])
+        box.setStyle(TableStyle([
+            ("BACKGROUND", (0,0), (-1,-1), col),
+            ("TEXTCOLOR", (0,0), (-1,-1), colors.white),
+            ("FONTNAME", (0,0), (-1,-1), "Helvetica-Bold"),
+            ("FONTSIZE", (0,0), (-1,-1), 10),
+            ("LEFTPADDING", (0,0), (-1,-1), 6),
+            ("RIGHTPADDING", (0,0), (-1,-1), 6),
+            ("TOPPADDING", (0,0), (-1,-1), 4),
+            ("BOTTOMPADDING", (0,0), (-1,-1), 4),
         ]))
-        
-        story.append(Paragraph("<b>Interpretationshilfe</b>", styles['Heading2']))
-        story.append(Spacer(1, 10))
-        story.append(interpretation_table)
-        
-        # Fusszeile
-        story.append(Spacer(1, 30))
-        footer_style = ParagraphStyle(
-            'FooterStyle',
-            parent=styles['Normal'],
-            fontSize=8,
-            textColor=colors.gray,
-            alignment=1
-        )
-        footer = Paragraph("Dieser Bericht wurde automatisch generiert. Die Daten wurden anonym erhoben.", footer_style)
-        story.append(footer)
-        
-        doc.build(story)
-        buffer.seek(0)
-        return buffer
-        
-    except Exception as e:
-        st.error(f"Fehler beim Erstellen des PDFs: {e}")
-        return None
+        story.append(box)
+        story.append(Spacer(1, 4*mm))
+
+        # kurze Hinweise / Interpretationstext
+        if score >= 4.2:
+            note = "Stabile Lage. Erhaltende Massnahmen empfohlen."
+        elif score >= 3.6:
+            note = "Gute Lage. Punktuelle Optimierungen möglich."
+        elif score >= 3.0:
+            note = "Mittel. Gezielte Massnahmen sollen priorisiert werden."
+        else:
+            note = "Verbesserungsbedarf. Handlungsbedarf hoch."
+
+        story.append(Paragraph(note, styles["Body"]))
+        story.append(Spacer(1, 4*mm))
+
+        # Tabelle mit Subdomain-Informationen
+        tdata = [["Teilbereich", "Score"]]
+        # Hier könnten bei Bedarf Subdomain-Scores eingefügt werden
+        tdata.append(["Gesamtbewertung", f"{score:.2f}/5"])
+        t = Table(tdata, colWidths=[110*mm, 40*mm])
+        t.setStyle(TableStyle([
+            ("BACKGROUND", (0,0), (-1,0), colors.HexColor(COLORS["mint"])),
+            ("TEXTCOLOR", (0,0), (-1,0), colors.HexColor(COLORS["anthrazit"])),
+            ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
+            ("ALIGN", (1,1), (1,-1), "CENTER"),
+            ("GRID", (0,0), (-1,-1), 0.5, colors.HexColor(COLORS["anthrazit"])),
+            ("BOTTOMPADDING", (0,0), (-1,-1), 6),
+            ("TOPPADDING", (0,0), (-1,-1), 6),
+        ]))
+        story.append(t)
+        story.append(Spacer(1, 8*mm))
+        story.append(HRDivider(width=160))
+        story.append(Spacer(1, 8*mm))
+
+    # Detailtabelle: Übersicht aller Bereiche
+    story.append(PageBreak())
+    story.append(Paragraph("Übersicht aller Bereiche", styles["H1"]))
+    table_data = [["Nr", "Bereich", "Score", "Interpretation"]]
+    for d in range(1,9):
+        s = scores.get(d, 0.0)
+        label, _ = get_interpretation(s)
+        table_data.append([str(d), DOMAINS.get(d, ""), f"{s:.2f}/5", label])
+
+    table = Table(table_data, colWidths=[20*mm, 90*mm, 30*mm, 40*mm])
+    table.setStyle(TableStyle([
+        ("BACKGROUND", (0,0), (-1,0), colors.HexColor(COLORS["mint"])),
+        ("TEXTCOLOR", (0,0), (-1,0), colors.HexColor(COLORS["anthrazit"])),
+        ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
+        ("GRID", (0,0), (-1,-1), 0.5, colors.HexColor(COLORS["anthrazit"])),
+        ("VALIGN", (0,0), (-1,-1), "MIDDLE"),
+        ("ALIGN", (2,1), (2,-1), "CENTER"),
+        ("ALIGN", (0,1), (0,-1), "CENTER"),
+    ]))
+
+    # bedingte Färbung für Interpretation
+    for i in range(1, len(table_data)):
+        interp = table_data[i][3]
+        if interp == "Sehr gut":
+            bg = colors.HexColor("#1E6F5C")
+        elif interp == "Gut":
+            bg = colors.HexColor("#2B8C69")
+        elif interp == "Mittel":
+            bg = colors.HexColor("#E9B44C")
+        else:
+            bg = colors.HexColor("#D9534F")
+        table.setStyle(TableStyle([
+            ("BACKGROUND", (3,i), (3,i), bg),
+            ("TEXTCOLOR", (3,i), (3,i), colors.white if interp != "Mittel" else colors.black),
+            ("FONTNAME", (3,i), (3,i), "Helvetica-Bold"),
+        ]))
+
+    story.append(table)
+    story.append(Spacer(1, 8*mm))
+
+    # Hinweise & Next steps
+    story.append(Paragraph("Nächste Schritte", styles["H1"]))
+    story.append(Paragraph("1) Bericht intern teilen. 2) Fokusgruppen planen. 3) Massnahmen priorisieren.", styles["Body"]))
+    story.append(Spacer(1, 6*mm))
+    story.append(Paragraph("Produziert mit internem Tool.", styles["SmallMuted"]))
+
+    # Build
+    doc.build(story, onFirstPage=_footer, onLaterPages=_footer)
+    buffer.seek(0)
+    return buffer
 
 def render_results():
-    """Zeigt die Ergebnisse und PDF-Download an - UNVERÄNDERT vom Original"""
+    """Zeigt die Ergebnisse und PDF-Download an"""
     st.markdown('<div class="main-header">', unsafe_allow_html=True)
     st.title("✅ Befragung abgeschlossen!")
     st.markdown('</div>', unsafe_allow_html=True)
