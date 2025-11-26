@@ -7,6 +7,8 @@ from reportlab.lib.pagesizes import A4
 from reportlab.platypus import Table, TableStyle
 from reportlab.lib import colors
 import io
+import plotly.graph_objects as go
+import plotly.express as px
 
 # Konfiguration
 WG_OPTIONS = [
@@ -379,6 +381,18 @@ def apply_custom_styles():
     .stWarning [data-testid="stMarkdownContainer"] p {{
         color: {COLORS['white']} !important;
     }}
+    
+    /* Responsive Design */
+    @media (max-width: 768px) {{
+        .main .block-container {{
+            padding: 1rem;
+            margin: 0.5rem;
+        }}
+        .stRadio > div {{
+            padding: 10px;
+            font-size: 14px;
+        }}
+    }}
     </style>
     """, unsafe_allow_html=True)
 
@@ -470,13 +484,14 @@ def render_survey():
     domain, subdomain = current_key
     questions = QUESTIONS.get(current_key, [])
     
-    # Fortschrittsberechnung
-    total_questions = len(QUESTIONS)
-    completed_questions = len(st.session_state.answers)
-    progress = completed_questions / total_questions
+    # Verbesserte Fortschrittsberechnung
+    total_sets = len(QUESTIONS)
+    completed_sets = len(st.session_state.answers)
+    current_set = completed_sets + 1
     
-    st.progress(progress)
-    st.write(f"Fortschritt: {completed_questions + 1} von {total_questions} Fragen")
+    st.progress(completed_sets / total_sets)
+    st.write(f"Fortschritt: {current_set} von {total_sets} Themenblöcken")
+    st.write(f"**Aktuell:** {DOMAINS.get(domain, 'Unbekannt')} - {SUBDOMAINS.get(domain, {}).get(subdomain, 'Unbekannt')}")
     
     # Frage anzeigen
     st.subheader("Bitte beantworte die folgenden Fragen:")
@@ -537,120 +552,376 @@ def calculate_scores():
     
     return avg_scores
 
-def create_pdf_report():
-    """Erstellt einen PDF-Report mit Tabellen und Interpretationen"""
-    buffer = io.BytesIO()
-    c = canvas.Canvas(buffer, pagesize=A4)
-    width, height = A4
+def create_radar_chart(scores):
+    """Erstellt ein Radar-Diagramm der Ergebnisse"""
+    domains = list(scores.keys())
+    values = list(scores.values())
+    domain_names = [f"Bereich {d}: {DOMAINS[d][:15]}..." for d in domains]
     
-    # Titel
-    c.setFillColor(colors.HexColor(COLORS['anthrazit']))
-    c.setFont("Helvetica-Bold", 20)
-    c.drawString(50, height - 60, "Mitarbeiterbefragung - Ergebnisbericht")
+    fig = go.Figure(data=go.Scatterpolar(
+        r=values + [values[0]],  # Zum Anfang zurück für geschlossene Form
+        theta=domain_names + [domain_names[0]],
+        fill='toself',
+        line=dict(color=COLORS['dark_green'], width=2),
+        fillcolor=COLORS['light_mint'],
+        opacity=0.7,
+        name="Deine Bewertung"
+    ))
     
-    # Metadaten
-    c.setFont("Helvetica", 12)
-    c.drawString(50, height - 90, f"Abteilung: {st.session_state.wg_selected}")
-    c.drawString(50, height - 110, f"Datum: {datetime.now().strftime('%d.%m.%Y')}")
+    # Referenzlinien hinzufügen
+    fig.add_trace(go.Scatterpolar(
+        r=[3.0] * (len(domains) + 1),  # Mindeststandard
+        theta=domain_names + [domain_names[0]],
+        line=dict(color=COLORS['anthrazit'], width=1, dash='dash'),
+        name="Mindeststandard (3.0)"
+    ))
     
-    if st.session_state.get('test_data_created', False):
-        c.drawString(50, height - 130, "Hinweis: Dies ist ein Testbericht mit simulierten Daten")
-    else:
-        c.drawString(50, height - 130, "Hinweis: Diese Befragung wurde anonym durchgeführt.")
+    fig.update_layout(
+        polar=dict(
+            radialaxis=dict(
+                visible=True,
+                range=[0, 5],
+                tickvals=[1, 2, 3, 4, 5],
+                ticktext=["1", "2", "3", "4", "5"],
+                gridcolor=COLORS['mint'],
+                linecolor=COLORS['anthrazit']
+            ),
+            angularaxis=dict(
+                gridcolor=COLORS['mint'],
+                linecolor=COLORS['anthrazit']
+            )
+        ),
+        showlegend=True,
+        title=dict(
+            text="Ergebnis-Überblick nach Themenbereichen",
+            x=0.5,
+            font=dict(size=16, color=COLORS['anthrazit'])
+        ),
+        height=500
+    )
     
-    y_position = height - 170
+    return fig
+
+def create_bar_chart(scores):
+    """Erstellt ein Balkendiagramm der Ergebnisse mit Farbcodierung"""
+    domains = list(scores.keys())
+    values = list(scores.values())
+    domain_names = [DOMAINS[d] for d in domains]
     
-    # Überschrift für Ergebnisse
-    c.setFillColor(colors.HexColor(COLORS['anthrazit']))
-    c.setFont("Helvetica-Bold", 16)
-    c.drawString(50, y_position, "Ergebnisse nach Themenbereichen:")
-    y_position -= 40
+    # Farben basierend auf Score
+    colors_list = []
+    for score in values:
+        if score >= 4.2:
+            colors_list.append("#1E6F5C")  # Sehr gut
+        elif score >= 3.6:
+            colors_list.append("#2B8C69")   # Gut
+        elif score >= 3.0:
+            colors_list.append("#E9B44C")   # Mittel
+        else:
+            colors_list.append("#D9534F")   # Verbesserungsbedarf
     
-    scores = calculate_scores()
+    fig = px.bar(
+        x=domain_names,
+        y=values,
+        color=colors_list,
+        color_discrete_map="identity",
+        labels={'x': 'Themenbereich', 'y': 'Durchschnitts-Score'},
+        title="Detailergebnisse nach Themenbereichen"
+    )
     
-    # Tabellendaten vorbereiten
-    table_data = [['Bereich', 'Thema', 'Score', 'Interpretation']]
+    fig.update_layout(
+        showlegend=False,
+        xaxis_tickangle=-45,
+        height=400,
+        yaxis_range=[0, 5]
+    )
+    
+    # Werte auf den Balken anzeigen
+    fig.update_traces(
+        texttemplate='%{y:.2f}',
+        textposition='outside',
+        marker_line_color=COLORS['anthrazit'],
+        marker_line_width=1
+    )
+    
+    return fig
+
+def create_comparison_chart(scores):
+    """Erstellt Vergleichschart mit Referenzwerten"""
+    # Beispiel-Referenzwerte (könnten aus DB kommen)
+    reference_scores = {
+        1: 3.8, 2: 4.1, 3: 3.9, 4: 3.7, 
+        5: 3.5, 6: 3.6, 7: 3.8, 8: 3.9
+    }
+    
+    domains = list(scores.keys())
+    domain_names = [f"Bereich {d}" for d in domains]
+    
+    fig = go.Figure()
+    
+    # Eigene Werte
+    fig.add_trace(go.Bar(
+        name='Deine Bewertung',
+        x=domain_names,
+        y=list(scores.values()),
+        marker_color=COLORS['dark_green']
+    ))
+    
+    # Referenzwerte
+    fig.add_trace(go.Bar(
+        name='Durchschnitt (Referenz)',
+        x=domain_names,
+        y=[reference_scores.get(d, 0) for d in domains],
+        marker_color=COLORS['mint']
+    ))
+    
+    fig.update_layout(
+        title="Vergleich mit Referenzwerten",
+        barmode='group',
+        xaxis_tickangle=-45,
+        height=400,
+        yaxis_range=[0, 5]
+    )
+    
+    return fig
+
+def render_detailed_score_table(scores):
+    """Detaillierte Tabelle mit farbiger Hervorhebung"""
+    st.subheader("📋 Detailergebnisse")
     
     for domain in range(1, 9):
-        domain_name = DOMAINS[domain]
         score = scores.get(domain, 0)
         interpretation, color = get_interpretation(score)
         
-        if len(domain_name) > 40:
-            words = domain_name.split()
-            domain_line1 = " ".join(words[:len(words)//2])
-            domain_line2 = " ".join(words[len(words)//2:])
-            table_data.append([f"Bereich {domain}", domain_line1, f"{score:.2f}/5", interpretation])
-            table_data.append(["", domain_line2, "", ""])
-        else:
-            table_data.append([f"Bereich {domain}", domain_name, f"{score:.2f}/5", interpretation])
-    
-    # Tabelle erstellen
-    table = Table(table_data, colWidths=[80, 220, 80, 100])
-    
-    # Tabellen-Stil
-    table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor(COLORS['mint'])),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.HexColor(COLORS['anthrazit'])),
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, 0), 12),
-        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-        ('FONTSIZE', (0, 1), (-1, -1), 10),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
-        ('TOPPADDING', (0, 0), (-1, -1), 8),
-        ('GRID', (0, 0), (-1, -1), 1, colors.HexColor(COLORS['anthrazit'])),
-        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [
-            colors.HexColor(COLORS['light_gray']), 
-            colors.white
-        ]),
-    ]))
-    
-    # Interpretationen einfärben
-    for i in range(1, len(table_data)):
-        interpretation = table_data[i][3]
-        if interpretation == "Sehr gut":
-            bg_color = colors.HexColor("#1E6F5C")
-            text_color = colors.white
-        elif interpretation == "Gut":
-            bg_color = colors.HexColor("#2B8C69") 
-            text_color = colors.white
-        elif interpretation == "Mittel":
-            bg_color = colors.HexColor("#E9B44C")
-            text_color = colors.black
-        else:
-            bg_color = colors.HexColor("#D9534F")
-            text_color = colors.white
-            
-        table.setStyle(TableStyle([
-            ('BACKGROUND', (3, i), (3, i), bg_color),
-            ('TEXTCOLOR', (3, i), (3, i), text_color),
-            ('FONTNAME', (3, i), (3, i), 'Helvetica-Bold'),
-        ]))
-    
-    table.wrapOn(c, width, height)
-    table.drawOn(c, 50, y_position - (len(table_data) * 20))
-    
-    y_position_summary = y_position - (len(table_data) * 20) - 60
-    
-    if scores:
-        total_avg = sum(scores.values()) / len(scores) if scores else 0
+        # Fortschrittsbalken mit Farbe
+        progress_html = f"""
+        <div style="background-color: {COLORS['light_gray']}; border-radius: 10px; height: 25px; margin: 5px 0;">
+            <div style="background-color: {color}; border-radius: 10px; height: 25px; width: {score/5*100}%; 
+                     display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">
+                {score:.2f}/5
+            </div>
+        </div>
+        """
         
+        with st.container():
+            col1, col2 = st.columns([3, 1])
+            with col1:
+                st.write(f"**{DOMAINS[domain]}**")
+            with col2:
+                st.write(f"*{interpretation}*")
+            
+            st.markdown(progress_html, unsafe_allow_html=True)
+        st.write("---")
+
+def render_strengths_weaknesses(scores):
+    """Automatische Identifikation von Stärken und Entwicklungsbereichen"""
+    st.subheader("🧐 Analyse")
+    
+    col1, col2 = st.columns(2)
+    
+    # Stärken (Score ≥ 4.0)
+    strengths = [(d, s) for d, s in scores.items() if s >= 4.0]
+    
+    with col1:
+        st.success("**✅ Stärken**")
+        if strengths:
+            for domain, score in sorted(strengths, key=lambda x: x[1], reverse=True):
+                interpretation, _ = get_interpretation(score)
+                st.write(f"• **{DOMAINS[domain]}** ({score:.2f}/5) - *{interpretation}*")
+        else:
+            st.write("Keine besonderen Stärken identifiziert")
+    
+    # Entwicklungsbereiche (Score < 3.0)
+    weaknesses = [(d, s) for d, s in scores.items() if s < 3.0]
+    
+    with col2:
+        st.error("**📈 Entwicklungsbereiche**")
+        if weaknesses:
+            for domain, score in sorted(weaknesses, key=lambda x: x[1]):
+                interpretation, _ = get_interpretation(score)
+                st.write(f"• **{DOMAINS[domain]}** ({score:.2f}/5) - *{interpretation}*")
+        else:
+            st.write("Keine kritischen Bereiche")
+
+def render_enhanced_results():
+    """Zeigt verbesserte Ergebnis-Visualisierungen"""
+    scores = calculate_scores()
+    
+    # Gesamtdurchschnitt an prominenter Stelle
+    total_avg = sum(scores.values()) / len(scores) if scores else 0
+    overall_interpretation, overall_color = get_interpretation(total_avg)
+    
+    st.subheader("📊 Gesamtergebnis")
+    
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric(
+            label="Abgeschlossene Bereiche",
+            value=f"{len(scores)}/8",
+            delta="Vollständig" if len(scores) == 8 else "Unvollständig"
+        )
+    
+    with col2:
+        st.metric(
+            label="Gesamtdurchschnitt",
+            value=f"{total_avg:.2f}/5",
+            delta=overall_interpretation,
+            delta_color="normal" if total_avg >= 3.0 else "inverse"
+        )
+    
+    with col3:
+        st.metric(
+            label="Beste Bewertung",
+            value=f"{max(scores.values()):.2f}/5" if scores else "0/5"
+        )
+    
+    # Interaktive Charts
+    st.subheader("📈 Visualisierungen")
+    
+    tab1, tab2, tab3, tab4 = st.tabs(["🎯 Radar-Übersicht", "📊 Balkendiagramm", "🔄 Vergleich", "📋 Detailtabelle"])
+    
+    with tab1:
+        st.plotly_chart(create_radar_chart(scores), use_container_width=True)
+        st.info("Das Radar-Diagramm zeigt Ihre Bewertungen im Vergleich zum Mindeststandard von 3.0.")
+    
+    with tab2:
+        st.plotly_chart(create_bar_chart(scores), use_container_width=True)
+        st.info("Farbcodierung: Grün = Sehr gut/Gut, Gelb = Mittel, Rot = Verbesserungsbedarf")
+    
+    with tab3:
+        st.plotly_chart(create_comparison_chart(scores), use_container_width=True)
+        st.info("Vergleich Ihrer Bewertungen mit typischen Referenzwerten aus ähnlichen Einrichtungen.")
+    
+    with tab4:
+        render_detailed_score_table(scores)
+    
+    # Stärken und Schwächen Analyse
+    render_strengths_weaknesses(scores)
+
+def create_pdf_report():
+    """Erstellt einen PDF-Report mit Tabellen und Interpretationen"""
+    try:
+        buffer = io.BytesIO()
+        c = canvas.Canvas(buffer, pagesize=A4)
+        width, height = A4
+        
+        # Titel
+        c.setFillColor(colors.HexColor(COLORS['anthrazit']))
+        c.setFont("Helvetica-Bold", 20)
+        c.drawString(50, height - 60, "Mitarbeiterbefragung - Ergebnisbericht")
+        
+        # Metadaten
+        c.setFont("Helvetica", 12)
+        c.drawString(50, height - 90, f"Abteilung: {st.session_state.wg_selected}")
+        c.drawString(50, height - 110, f"Datum: {datetime.now().strftime('%d.%m.%Y')}")
+        
+        if st.session_state.get('test_data_created', False):
+            c.drawString(50, height - 130, "Hinweis: Dies ist ein Testbericht mit simulierten Daten")
+        else:
+            c.drawString(50, height - 130, "Hinweis: Diese Befragung wurde anonym durchgeführt.")
+        
+        y_position = height - 170
+        
+        # Überschrift für Ergebnisse
         c.setFillColor(colors.HexColor(COLORS['anthrazit']))
         c.setFont("Helvetica-Bold", 16)
-        c.drawString(50, y_position_summary, "Zusammenfassung:")
+        c.drawString(50, y_position, "Ergebnisse nach Themenbereichen:")
+        y_position -= 40
         
-        c.setFont("Helvetica-Bold", 14)
-        c.drawString(50, y_position_summary - 30, f"Gesamtdurchschnitt: {total_avg:.2f}/5")
+        scores = calculate_scores()
         
-        c.setFont("Helvetica", 9)
-        c.drawString(50, y_position_summary - 60, "Interpretation: ≥4.2 = Sehr gut | ≥3.6 = Gut | ≥3.0 = Mittel | <3.0 = Verbesserungsbedarf")
-        c.drawString(50, y_position_summary - 75, "Skala: 1 = Trifft gar nicht zu | 3 = Teils/teils | 5 = Trifft voll zu")
-    
-    c.save()
-    buffer.seek(0)
-    return buffer
+        # Tabellendaten vorbereiten
+        table_data = [['Bereich', 'Thema', 'Score', 'Interpretation']]
+        
+        for domain in range(1, 9):
+            domain_name = DOMAINS[domain]
+            score = scores.get(domain, 0)
+            interpretation, color = get_interpretation(score)
+            
+            if len(domain_name) > 40:
+                words = domain_name.split()
+                domain_line1 = " ".join(words[:len(words)//2])
+                domain_line2 = " ".join(words[len(words)//2:])
+                table_data.append([f"Bereich {domain}", domain_line1, f"{score:.2f}/5", interpretation])
+                table_data.append(["", domain_line2, "", ""])
+            else:
+                table_data.append([f"Bereich {domain}", domain_name, f"{score:.2f}/5", interpretation])
+        
+        # Tabelle erstellen
+        table = Table(table_data, colWidths=[80, 220, 80, 100])
+        
+        # Tabellen-Stil
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor(COLORS['mint'])),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.HexColor(COLORS['anthrazit'])),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 12),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 1), (-1, -1), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+            ('TOPPADDING', (0, 0), (-1, -1), 8),
+            ('GRID', (0, 0), (-1, -1), 1, colors.HexColor(COLORS['anthrazit'])),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [
+                colors.HexColor(COLORS['light_gray']), 
+                colors.white
+            ]),
+        ]))
+        
+        # Interpretationen einfärben
+        for i in range(1, len(table_data)):
+            interpretation = table_data[i][3]
+            if interpretation == "Sehr gut":
+                bg_color = colors.HexColor("#1E6F5C")
+                text_color = colors.white
+            elif interpretation == "Gut":
+                bg_color = colors.HexColor("#2B8C69") 
+                text_color = colors.white
+            elif interpretation == "Mittel":
+                bg_color = colors.HexColor("#E9B44C")
+                text_color = colors.black
+            else:
+                bg_color = colors.HexColor("#D9534F")
+                text_color = colors.white
+                
+            table.setStyle(TableStyle([
+                ('BACKGROUND', (3, i), (3, i), bg_color),
+                ('TEXTCOLOR', (3, i), (3, i), text_color),
+                ('FONTNAME', (3, i), (3, i), 'Helvetica-Bold'),
+            ]))
+        
+        table.wrapOn(c, width, height)
+        table.drawOn(c, 50, y_position - (len(table_data) * 20))
+        
+        y_position_summary = y_position - (len(table_data) * 20) - 60
+        
+        if scores:
+            total_avg = sum(scores.values()) / len(scores) if scores else 0
+            
+            c.setFillColor(colors.HexColor(COLORS['anthrazit']))
+            c.setFont("Helvetica-Bold", 16)
+            c.drawString(50, y_position_summary, "Zusammenfassung:")
+            
+            c.setFont("Helvetica-Bold", 14)
+            c.drawString(50, y_position_summary - 30, f"Gesamtdurchschnitt: {total_avg:.2f}/5")
+            
+            c.setFont("Helvetica", 9)
+            c.drawString(50, y_position_summary - 60, "Interpretation: ≥4.2 = Sehr gut | ≥3.6 = Gut | ≥3.0 = Mittel | <3.0 = Verbesserungsbedarf")
+            c.drawString(50, y_position_summary - 75, "Skala: 1 = Trifft gar nicht zu | 3 = Teils/teils | 5 = Trifft voll zu")
+        
+        c.save()
+        buffer.seek(0)
+        return buffer
+    except Exception as e:
+        st.error(f"Fehler beim Erstellen des PDFs: {e}")
+        return None
+
+def clear_session():
+    """Setzt die Session State komplett zurück"""
+    for key in list(st.session_state.keys()):
+        del st.session_state[key]
+    st.rerun()
 
 def render_results():
     """Zeigt die Ergebnisse und PDF-Download an"""
@@ -663,27 +934,23 @@ def render_results():
     else:
         st.success("Vielen Dank für deine Teilnahme an der Befragung!")
     
-    st.subheader("Zusammenfassung deiner Antworten")
+    # Verbesserte Visualisierungen
+    render_enhanced_results()
     
-    scores = calculate_scores()
-    for domain in range(1, 9):
-        score = scores.get(domain, 0)
-        interpretation, color = get_interpretation(score)
-        st.write(f"**{DOMAINS[domain]}:** {score:.2f}/5 Punkte - *{interpretation}*")
-        st.progress(score / 5)
-    
-    # PDF erstellen
+    # PDF Download
+    st.subheader("📄 Bericht herunterladen")
     pdf_buffer = create_pdf_report()
     
-    st.subheader("📊 Bericht herunterladen")
-    
-    st.download_button(
-        label="📄 PDF Bericht herunterladen",
-        data=pdf_buffer,
-        file_name=f"Befragung_{st.session_state.wg_selected}_{datetime.now().strftime('%Y%m%d')}.pdf",
-        mime="application/pdf",
-        type="primary"
-    )
+    if pdf_buffer:
+        st.download_button(
+            label="📄 PDF Bericht herunterladen",
+            data=pdf_buffer,
+            file_name=f"Befragung_{st.session_state.wg_selected}_{datetime.now().strftime('%Y%m%d')}.pdf",
+            mime="application/pdf",
+            type="primary"
+        )
+    else:
+        st.error("PDF konnte nicht erstellt werden. Bitte versuchen Sie es erneut.")
     
     st.info("""
     **📋 Nächste Schritte:**
@@ -692,20 +959,25 @@ def render_results():
     - Leg ihn deiner/m Vorgesetzten in sein/ihr Fach
     """)
     
-    # Neue Befragung starten
+    # Navigation
     st.write("---")
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
     
     with col1:
+        if st.button("🏠 Startseite"):
+            clear_session()
+    
+    with col2:
         if st.button("🔄 Neue Test-Befragung"):
             st.session_state.answers = create_test_data()
             st.session_state.test_data_created = True
             st.rerun()
     
-    with col2:
-        if st.button("🏠 Neue echte Befragung"):
-            for key in list(st.session_state.keys()):
-                del st.session_state[key]
+    with col3:
+        if st.button("📝 Neue echte Befragung"):
+            for key in ['current_step', 'wg_selected', 'answers', 'test_data_created']:
+                if key in st.session_state:
+                    del st.session_state[key]
             st.rerun()
 
 def main():
