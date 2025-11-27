@@ -110,7 +110,7 @@ QUESTIONS = {
     # DOMÄNE 2 – Einarbeitung & Personalentwicklung
     (2, 1): [
         "Die Einarbeitung neuer Mitarbeitender folgt einem klaren Plan.",
-        "Neue Kolleg/innen wissen früh, was von ihnen erwartet wird."
+        "Neue Kolleg/innen wissen früh, what von ihnen erwartet wird."
     ],
     (2, 2): [
         "Neue Mitarbeitende haben feste Personen, die sie begleiten.",
@@ -461,66 +461,181 @@ def apply_custom_styles():
     """, unsafe_allow_html=True)
 
 def render_wg_selection():
-    """WG Auswahl Schritt"""
+    """WG Auswahl Schritt - Optisch verbessert"""
     st.markdown('<div class="main-header">', unsafe_allow_html=True)
-    st.title("🏠 Mitarbeiterbefragung Hausverbund A")
+    
+    # Header mit Icon und besserer Typografie
+    col1, col2, col3 = st.columns([1, 20, 1])
+    with col2:
+        st.markdown("""
+        <div style='text-align: center;'>
+            <h1 style='margin-bottom: 0;'>🏠 Mitarbeiterbefragung</h1>
+            <h3 style='color: #4A7C59; margin-top: 5px;'>Hausverbund A</h3>
+        </div>
+        """, unsafe_allow_html=True)
+    
     st.markdown('</div>', unsafe_allow_html=True)
     
+    # Einleitung mit visuellen Elementen
     st.markdown("""
-    Im Mai 2025 fand die kantonale Personalbefragung der Institutionen für Menschen mit Behinderungen statt. 
-    Die Ergebnisse für unseren Bereich waren insgesamt erfreulich und haben sowohl Stärken als auch Entwicklungsbereiche aufgezeigt.
-
-    **Um diese Ergebnisse besser zu verstehen**, führen wir nun eine vertiefte Befragung in unserem **Hausverbund A** durch. 
-    Wir möchten genauer nachvollziehen:
-    - Was hinter den positiven Rückmeldungen steht  
-    - Wo die Ursachen für kritischere Bewertungen liegen
-
-    **Wichtig:** Es geht nicht um die Beurteilung Einzelner, sondern um eine strukturierte Analyse der 
-    Arbeitsbedingungen, Belastungen und Teamstärken.
-
-    **Deine Teilnahme ist wertvoll**, denn nur durch eine breite Beteiligung entsteht ein realistisches Bild 
-    unserer Situation. Je genauer die Rückmeldungen, desto besser können wir verstehen, 
-    was im Alltag gut funktioniert und wo Verbesserungen sinnvoll sind.
-
-    Vielen Dank für deine Mitarbeit und die investierte Zeit!
-    """)
+    <div style='
+        background: linear-gradient(135deg, #A8D5BA, #4A7C59);
+        padding: 25px;
+        border-radius: 12px;
+        color: white;
+        margin-bottom: 25px;
+    '>
+    <h3 style='color: white; margin-bottom: 15px;'>📊 Hintergrund der Befragung</h3>
+    <p style='margin-bottom: 10px; font-size: 16px;'>
+    Im Mai 2025 fand die <strong>kantonale Personalbefragung</strong> der Institutionen für Menschen mit Behinderungen statt. 
+    Die Ergebnisse für unseren Bereich waren insgesamt <strong>erfreulich</strong> und haben sowohl 
+    <span style='color: #1E6F5C; font-weight: bold;'>Stärken</span> als auch 
+    <span style='color: #E9B44C; font-weight: bold;'>Entwicklungsbereiche</span> aufgezeigt.
+    </p>
+    </div>
+    """, unsafe_allow_html=True)
     
-    # TEST-BUTTON FÜR SCHNELLEN TEST
+    # Ziele der Befragung in einer Box
+    st.markdown("""
+    <div style='
+        border-left: 4px solid #4A7C59;
+        background-color: #F8F9FA;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 25px;
+    '>
+    <h4 style='color: #2F4F4F; margin-bottom: 15px;'>🎯 Was wollen wir erreichen?</h4>
+    <p style='margin-bottom: 15px;'>
+    Um diese Ergebnisse besser zu verstehen, führen wir nun eine <strong>vertiefte Befragung</strong> in unserem <strong>Hausverbund A</strong> durch.
+    </p>
+    
+    <div style='display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 20px 0;'>
+        <div style='
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #A8D5BA;
+            text-align: center;
+        '>
+            <div style='font-size: 24px; margin-bottom: 8px;'>✅</div>
+            <strong>Positive Rückmeldungen verstehen</strong>
+            <p style='font-size: 14px; margin: 8px 0 0 0; color: #666;'>
+            Was läuft besonders gut?
+            </p>
+        </div>
+        <div style='
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #A8D5BA;
+            text-align: center;
+        '>
+            <div style='font-size: 24px; margin-bottom: 8px;'>🔍</div>
+            <strong>Kritische Bewertungen analysieren</strong>
+            <p style='font-size: 14px; margin: 8px 0 0 0; color: #666;'>
+            Wo können wir uns verbessern?
+            </p>
+        </div>
+    </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Wichtiger Hinweis als Highlight
+    st.markdown("""
+    <div style='
+        background-color: #FFF3CD;
+        border: 1px solid #FFEAA7;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 25px;
+    '>
+    <div style='display: flex; align-items: flex-start;'>
+        <span style='font-size: 24px; margin-right: 15px;'>⚠️</span>
+        <div>
+            <h4 style='color: #856404; margin: 0 0 10px 0;'>Wichtiger Hinweis</h4>
+            <p style='margin: 0; color: #856404;'>
+            Es geht <strong>nicht um die Beurteilung Einzelner</strong>, sondern um eine strukturierte Analyse der 
+            <strong>Arbeitsbedingungen, Belastungen und Teamstärken</strong> in unserem Hausverbund A.
+            </p>
+        </div>
+    </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Deine Teilnahme als Call-to-Action
+    st.markdown("""
+    <div style='
+        background: linear-gradient(135deg, #2F4F4F, #4A7C59);
+        color: white;
+        padding: 25px;
+        border-radius: 12px;
+        text-align: center;
+        margin-bottom: 25px;
+    '>
+    <h3 style='color: white; margin-bottom: 15px;'>💪 Deine Teilnahme ist wertvoll!</h3>
+    <p style='font-size: 16px; margin-bottom: 15px;'>
+    Nur durch eine <strong>breite Beteiligung</strong> entsteht ein realistisches Bild unserer Situation. 
+    </p>
+    <p style='font-size: 16px; margin: 0;'>
+    <strong>Je genauer die Rückmeldungen, desto besser</strong> können wir verstehen, was im Alltag gut funktioniert 
+    und wo Verbesserungen sinnvoll sind.
+    </p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Danksagung als Abschluss
+    st.markdown("""
+    <div style='
+        text-align: center;
+        padding: 20px;
+        background-color: #E8F5E8;
+        border-radius: 8px;
+        margin-bottom: 25px;
+    '>
+    <p style='font-size: 18px; color: #2F4F4F; margin: 0;'>
+    <strong>Vielen Dank für deine Mitarbeit und die investierte Zeit! 🙏</strong>
+    </p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Testbereich
     st.write("---")
-    st.subheader("🛠️ Testbereich")
     
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        if st.button("🚀 Schnelltest: Mit Testdaten füllen", type="secondary"):
-            st.session_state.answers = create_test_data()
-            st.session_state.wg_selected = "WG Fliegenpilz"
-            st.session_state.current_step = 'results'
-            st.session_state.test_data_created = True
-            st.rerun()
-    
-    with col2:
-        if st.button("📋 Normale Befragung starten", type="primary"):
-            st.session_state.current_step = 'survey'
-            st.rerun()
+    with st.expander("🛠️ Für schnelles Testen", expanded=False):
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("🚀 Schnelltest starten", type="secondary", use_container_width=True):
+                st.session_state.answers = create_test_data()
+                st.session_state.wg_selected = "WG Fliegenpilz"
+                st.session_state.current_step = 'results'
+                st.session_state.test_data_created = True
+                st.rerun()
+        with col2:
+            if st.button("📋 Echte Befragung", type="primary", use_container_width=True):
+                st.session_state.current_step = 'survey'
+                st.rerun()
     
     if st.session_state.get('test_data_created', False):
         st.success("✅ Test-Daten wurden erstellt! Du wirst zur Ergebnis-Seite weitergeleitet...")
     
-    st.subheader("Bitte wähle deine Abteilung aus")
+    # Hauptauswahl
+    st.subheader("🎯 Starte die Befragung")
     
     selected_wg = st.selectbox(
-        "Abteilung:",
+        "Wähle deine Abteilung aus:",
         WG_OPTIONS,
         key="wg_select"
     )
     
-    st.info("💡 Die Befragung ist komplett anonym. Deine Antworten können nicht dir persönlich zugeordnet werden.")
+    st.info("💡 **Anonymität garantiert** - Deine Antworten können nicht dir persönlich zugeordnet werden.")
     
-    if st.button("Befragung starten"):
-        st.session_state.wg_selected = selected_wg
-        st.session_state.current_step = 'survey'
-        st.rerun()
+    if st.button("📝 Befragung starten", type="primary", use_container_width=True):
+        if selected_wg:
+            st.session_state.wg_selected = selected_wg
+            st.session_state.current_step = 'survey'
+            st.rerun()
+        else:
+            st.warning("Bitte wähle zuerst eine Abteilung aus.")
 
 def render_survey():
     """Haupt-Befragung mit allen Fragen"""
@@ -691,7 +806,19 @@ def create_radar_chart(scores):
     img_buffer.seek(0)
     return img_buffer
 
-# ---- OPTIMIERTE 1-SEITEN PDF-FUNKTION ----
+class HRDivider(Flowable):
+    """einfache Linie als Trenner"""
+    def __init__(self, width=160):
+        Flowable.__init__(self)
+        self.width = width
+
+    def draw(self):
+        self.canv.setLineWidth(1)
+        self.canv.setStrokeColor(colors.HexColor(COLORS["dark_green"]))
+        x = 0
+        y = 0
+        self.canv.line(x, y, self.width, y)
+
 def create_compact_pdf_report(answers, wg_selected, test_data_created=False):
     """
     Erstellt einen extrem kompakten 1-seitigen PDF-Report für die Mitarbeiterbefragung
@@ -947,21 +1074,6 @@ def create_compact_pdf_report(answers, wg_selected, test_data_created=False):
     doc.build(story)
     buffer.seek(0)
     return buffer
-
-# ---- ENTFERNT: Ausführlicher PDF-Report ----
-
-class HRDivider(Flowable):
-    """einfache Linie als Trenner"""
-    def __init__(self, width=160):
-        Flowable.__init__(self)
-        self.width = width
-
-    def draw(self):
-        self.canv.setLineWidth(1)
-        self.canv.setStrokeColor(colors.HexColor(COLORS["dark_green"]))
-        x = 0
-        y = 0
-        self.canv.line(x, y, self.width, y)
 
 def render_results():
     """Zeigt die Ergebnisse und PDF-Download an"""
