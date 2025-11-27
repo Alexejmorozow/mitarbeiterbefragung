@@ -110,7 +110,7 @@ QUESTIONS = {
     # DOMÄNE 2 – Einarbeitung & Personalentwicklung
     (2, 1): [
         "Die Einarbeitung neuer Mitarbeitender folgt einem klaren Plan.",
-        "Neue Kolleg/innen wissen früh, what von ihnen erwartet wird."
+        "Neue Kolleg/innen wissen früh, was von ihnen erwartet wird."
     ],
     (2, 2): [
         "Neue Mitarbeitende haben feste Personen, die sie begleiten.",
@@ -461,7 +461,7 @@ def apply_custom_styles():
     """, unsafe_allow_html=True)
 
 def render_wg_selection():
-    """WG Auswahl Schritt - Optisch verbessert"""
+    """WG Auswahl Schritt - Optisch verbessert mit 3 klaren Abschnitten"""
     st.markdown('<div class="main-header">', unsafe_allow_html=True)
     
     # Header mit Icon und besserer Typografie
@@ -476,63 +476,48 @@ def render_wg_selection():
     
     st.markdown('</div>', unsafe_allow_html=True)
     
-    # Einleitung mit visuellen Elementen
+    # ABSCHNITT 1: Hero-Sektion - Hintergrund & Ziele kombiniert
     st.markdown("""
     <div style='
         background: linear-gradient(135deg, #A8D5BA, #4A7C59);
-        padding: 25px;
-        border-radius: 12px;
+        padding: 30px;
+        border-radius: 15px;
         color: white;
         margin-bottom: 25px;
     '>
-    <h3 style='color: white; margin-bottom: 15px;'>📊 Hintergrund der Befragung</h3>
-    <p style='margin-bottom: 10px; font-size: 16px;'>
-    Im Mai 2025 fand die <strong>kantonale Personalbefragung</strong> der Institutionen für Menschen mit Behinderungen statt. 
-    Die Ergebnisse für unseren Bereich waren insgesamt <strong>erfreulich</strong> und haben sowohl 
-    <span style='color: #1E6F5C; font-weight: bold;'>Stärken</span> als auch 
-    <span style='color: #E9B44C; font-weight: bold;'>Entwicklungsbereiche</span> aufgezeigt.
-    </p>
-    </div>
-    """, unsafe_allow_html=True)
+    <h2 style='color: white; margin-bottom: 20px; text-align: center;'>📊 Willkommen zur Mitarbeiterbefragung</h2>
     
-    # Ziele der Befragung in einer Box
-    st.markdown("""
-    <div style='
-        border-left: 4px solid #4A7C59;
-        background-color: #F8F9FA;
-        padding: 20px;
-        border-radius: 8px;
-        margin-bottom: 25px;
-    '>
-    <h4 style='color: #2F4F4F; margin-bottom: 15px;'>🎯 Was wollen wir erreichen?</h4>
-    <p style='margin-bottom: 15px;'>
-    Um diese Ergebnisse besser zu verstehen, führen wir nun eine <strong>vertiefte Befragung</strong> in unserem <strong>Hausverbund A</strong> durch.
+    <p style='font-size: 16px; margin-bottom: 20px; text-align: center;'>
+    Im Mai 2025 fand die <strong>kantonale Personalbefragung</strong> statt. 
+    Nun vertiefen wir die Ergebnisse in unserem <strong>Hausverbund A</strong>.
     </p>
     
-    <div style='display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 20px 0;'>
+    <div style='display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 25px 0;'>
         <div style='
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            border: 1px solid #A8D5BA;
+            background: rgba(255,255,255,0.2);
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid rgba(255,255,255,0.3);
             text-align: center;
+            backdrop-filter: blur(10px);
         '>
-            <div style='font-size: 24px; margin-bottom: 8px;'>✅</div>
-            <strong>Positive Rückmeldungen verstehen</strong>
-            <p style='font-size: 14px; margin: 8px 0 0 0; color: #666;'>
+            <div style='font-size: 28px; margin-bottom: 10px;'>✅</div>
+            <strong style='font-size: 16px;'>Positive Rückmeldungen verstehen</strong>
+            <p style='font-size: 14px; margin: 10px 0 0 0; opacity: 0.9;'>
             Was läuft besonders gut?
             </p>
         </div>
         <div style='
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            border: 1px solid #A8D5BA;
+            background: rgba(255,255,255,0.2);
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid rgba(255,255,255,0.3);
             text-align: center;
+            backdrop-filter: blur(10px);
         '>
-            <div style='font-size: 24px; margin-bottom: 8px;'>🔍</div>
-            <strong>Kritische Bewertungen analysieren</strong>
-            <p style='font-size: 14px; margin: 8px 0 0 0; color: #666;'>
+            <div style='font-size: 28px; margin-bottom: 10px;'>🔍</div>
+            <strong style='font-size: 16px;'>Kritische Bewertungen analysieren</strong>
+            <p style='font-size: 14px; margin: 10px 0 0 0; opacity: 0.9;'>
             Wo können wir uns verbessern?
             </p>
         </div>
@@ -540,68 +525,60 @@ def render_wg_selection():
     </div>
     """, unsafe_allow_html=True)
     
-    # Wichtiger Hinweis als Highlight
+    # ABSCHNITT 2: Wichtige Informationen kombiniert
     st.markdown("""
     <div style='
-        background-color: #FFF3CD;
-        border: 1px solid #FFEAA7;
-        border-radius: 8px;
-        padding: 20px;
+        background: linear-gradient(135deg, #2F4F4F, #4A7C59);
+        padding: 30px;
+        border-radius: 15px;
+        color: white;
         margin-bottom: 25px;
     '>
-    <div style='display: flex; align-items: flex-start;'>
-        <span style='font-size: 24px; margin-right: 15px;'>⚠️</span>
+    <div style='display: flex; align-items: flex-start; margin-bottom: 20px;'>
+        <span style='font-size: 28px; margin-right: 15px;'>⚠️</span>
         <div>
-            <h4 style='color: #856404; margin: 0 0 10px 0;'>Wichtiger Hinweis</h4>
-            <p style='margin: 0; color: #856404;'>
+            <h3 style='color: white; margin: 0 0 10px 0;'>Wichtiger Hinweis</h3>
+            <p style='margin: 0; font-size: 15px;'>
             Es geht <strong>nicht um die Beurteilung Einzelner</strong>, sondern um eine strukturierte Analyse der 
-            <strong>Arbeitsbedingungen, Belastungen und Teamstärken</strong> in unserem Hausverbund A.
+            <strong>Arbeitsbedingungen, Belastungen und Teamstärken</strong>.
+            </p>
+        </div>
+    </div>
+    
+    <div style='
+        background: rgba(255,255,255,0.15);
+        padding: 20px;
+        border-radius: 10px;
+        border-left: 4px solid #A8D5BA;
+        margin-top: 15px;
+    '>
+    <div style='display: flex; align-items: center;'>
+        <span style='font-size: 24px; margin-right: 15px;'>💪</span>
+        <div>
+            <h4 style='color: white; margin: 0 0 8px 0;'>Deine Teilnahme ist wertvoll!</h4>
+            <p style='margin: 0; font-size: 14px; opacity: 0.9;'>
+            Nur durch eine <strong>breite Beteiligung</strong> entsteht ein realistisches Bild unserer Situation. 
+            Je genauer die Rückmeldungen, desto besser können wir verstehen, was im Alltag gut funktioniert.
             </p>
         </div>
     </div>
     </div>
+    </div>
     """, unsafe_allow_html=True)
     
-    # Deine Teilnahme als Call-to-Action
+    # ABSCHNITT 3: Aktionsbereich
     st.markdown("""
     <div style='
-        background: linear-gradient(135deg, #2F4F4F, #4A7C59);
-        color: white;
+        background: linear-gradient(135deg, #E8F5E8, #A8D5BA);
         padding: 25px;
-        border-radius: 12px;
-        text-align: center;
+        border-radius: 15px;
         margin-bottom: 25px;
     '>
-    <h3 style='color: white; margin-bottom: 15px;'>💪 Deine Teilnahme ist wertvoll!</h3>
-    <p style='font-size: 16px; margin-bottom: 15px;'>
-    Nur durch eine <strong>breite Beteiligung</strong> entsteht ein realistisches Bild unserer Situation. 
-    </p>
-    <p style='font-size: 16px; margin: 0;'>
-    <strong>Je genauer die Rückmeldungen, desto besser</strong> können wir verstehen, was im Alltag gut funktioniert 
-    und wo Verbesserungen sinnvoll sind.
-    </p>
-    </div>
+    <h3 style='color: #2F4F4F; margin-bottom: 20px; text-align: center;'>🎯 Starte die Befragung</h3>
     """, unsafe_allow_html=True)
     
-    # Danksagung als Abschluss
-    st.markdown("""
-    <div style='
-        text-align: center;
-        padding: 20px;
-        background-color: #E8F5E8;
-        border-radius: 8px;
-        margin-bottom: 25px;
-    '>
-    <p style='font-size: 18px; color: #2F4F4F; margin: 0;'>
-    <strong>Vielen Dank für deine Mitarbeit und die investierte Zeit!</strong>
-    </p>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # Testbereich
-    st.write("---")
-    
-    with st.expander("🛠️ Für schnelles Testen", expanded=False):
+    # Testbereich in einem Expander
+    with st.expander("🛠️ Für schnelles Testen (optional)", expanded=False):
         col1, col2 = st.columns(2)
         with col1:
             if st.button("🚀 Schnelltest starten", type="secondary", use_container_width=True):
@@ -615,12 +592,7 @@ def render_wg_selection():
                 st.session_state.current_step = 'survey'
                 st.rerun()
     
-    if st.session_state.get('test_data_created', False):
-        st.success("✅ Test-Daten wurden erstellt! Du wirst zur Ergebnis-Seite weitergeleitet...")
-    
     # Hauptauswahl
-    st.subheader("🎯 Starte die Befragung")
-    
     selected_wg = st.selectbox(
         "Wähle deine Abteilung aus:",
         WG_OPTIONS,
@@ -629,6 +601,7 @@ def render_wg_selection():
     
     st.info("💡 **Anonymität garantiert** - Deine Antworten können nicht dir persönlich zugeordnet werden.")
     
+    # Großer Start-Button
     if st.button("📝 Befragung starten", type="primary", use_container_width=True):
         if selected_wg:
             st.session_state.wg_selected = selected_wg
@@ -636,6 +609,23 @@ def render_wg_selection():
             st.rerun()
         else:
             st.warning("Bitte wähle zuerst eine Abteilung aus.")
+    
+    st.markdown("</div>", unsafe_allow_html=True)
+    
+    # Danksagung als Abschluss
+    st.markdown("""
+    <div style='
+        text-align: center;
+        padding: 20px;
+        background-color: #F8F9FA;
+        border-radius: 10px;
+        margin-top: 20px;
+    '>
+    <p style='font-size: 16px; color: #2F4F4F; margin: 0;'>
+    <strong>Vielen Dank für deine Mitarbeit und die investierte Zeit! 🙏</strong>
+    </p>
+    </div>
+    """, unsafe_allow_html=True)
 
 def render_survey():
     """Haupt-Befragung mit allen Fragen"""
