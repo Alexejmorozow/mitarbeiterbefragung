@@ -593,7 +593,7 @@ def render_wg_selection():
         margin-bottom: 25px;
     '>
     <p style='font-size: 18px; color: #2F4F4F; margin: 0;'>
-    <strong>Vielen Dank für deine Mitarbeit und die investierte Zeit! 🙏</strong>
+    <strong>Vielen Dank für deine Mitarbeit und die investierte Zeit!</strong>
     </p>
     </div>
     """, unsafe_allow_html=True)
