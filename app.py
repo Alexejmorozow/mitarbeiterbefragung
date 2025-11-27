@@ -566,7 +566,7 @@ def render_survey():
         # Hinweis für negative Fragen
         is_negative = (domain, subdomain) in NEGATIVE_QUESTIONS and i in NEGATIVE_QUESTIONS[(domain, subdomain)]
         if is_negative:
-            st.caption("🔄 Diese Frage ist negativ formuliert - 'Trifft voll zu' bedeutet hier eine schlechte Situation")
+            st.caption("🔄 'Trifft voll zu' bedeutet hier etwas negatives")
         
         answer = st.radio(
             f"Deine Antwort:",
