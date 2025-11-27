@@ -91,7 +91,7 @@ SUBDOMAINS = {
 QUESTIONS = {
     # DOMÄNE 1 – Arbeitsbelastung & Zeitdruck
     (1, 1): [
-        "Ich habe genügend Zeit, um Bewohner*innen professionell und in Ruhe zu betreuen.",
+        "Ich habe genügend Zeit, um Bewonner*innen professionell und in Ruhe zu betreuen.",
         "Ich schaffe die Dokumentation üblicherweise innerhalb der regulären Arbeitszeit."
     ],
     (1, 2): [
@@ -712,7 +712,7 @@ def create_bar_chart(domain_scores):
     buf.seek(0)
     return buf
 
-# ---- NEU: Kompaktes PDF ----
+# ---- KORRIGIERTE KOMPAKTE PDF-FUNKTION ----
 def create_compact_pdf_report(answers, wg_selected, test_data_created=False):
     """
     Erstellt einen extrem kompakten 2-seitigen PDF-Report für die Mitarbeiterbefragung
@@ -725,14 +725,14 @@ def create_compact_pdf_report(answers, wg_selected, test_data_created=False):
     # Buffer für PDF
     buffer = io.BytesIO()
     
-    # Dokument mit schmalen Rändern für maximale Platzausnutzung
+    # Dokument mit angemessenen Rändern
     doc = SimpleDocTemplate(
         buffer,
         pagesize=A4,
-        rightMargin=10*mm,
-        leftMargin=10*mm,
-        topMargin=10*mm,
-        bottomMargin=10*mm
+        rightMargin=15*mm,
+        leftMargin=15*mm,
+        topMargin=15*mm,
+        bottomMargin=15*mm
     )
     
     # Styles definieren
@@ -741,23 +741,23 @@ def create_compact_pdf_report(answers, wg_selected, test_data_created=False):
         name='CompactTitle',
         parent=styles['Normal'],
         fontName='Helvetica-Bold',
-        fontSize=16,
-        spaceAfter=12,
+        fontSize=14,
+        spaceAfter=8,
         alignment=1  # zentriert
     ))
     styles.add(ParagraphStyle(
         name='CompactHeader',
         parent=styles['Normal'],
         fontName='Helvetica-Bold',
-        fontSize=10,
-        spaceAfter=6
+        fontSize=9,
+        spaceAfter=4
     ))
     styles.add(ParagraphStyle(
         name='CompactText',
         parent=styles['Normal'],
         fontName='Helvetica',
-        fontSize=8,
-        spaceAfter=3
+        fontSize=7,
+        spaceAfter=2
     ))
     
     story = []
@@ -767,7 +767,7 @@ def create_compact_pdf_report(answers, wg_selected, test_data_created=False):
     
     # Titel und Metadaten
     story.append(Paragraph("MITARBEITERBEFRAGUNG - HAUSVERBUND A", styles['CompactTitle']))
-    story.append(Spacer(1, 5*mm))
+    story.append(Spacer(1, 4*mm))
     
     # Metadaten Tabelle
     meta_data = [
@@ -776,14 +776,14 @@ def create_compact_pdf_report(answers, wg_selected, test_data_created=False):
         ["Testdaten" if test_data_created else "Anonyme Befragung"]
     ]
     
-    meta_table = Table(meta_data, colWidths=[180*mm])
+    meta_table = Table(meta_data, colWidths=[160*mm])
     meta_table.setStyle(TableStyle([
-        ('FONT', (0,0), (-1,-1), 'Helvetica', 9),
+        ('FONT', (0,0), (-1,-1), 'Helvetica', 8),
         ('ALIGN', (0,0), (-1,-1), 'LEFT'),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 3),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 2),
     ]))
     story.append(meta_table)
-    story.append(Spacer(1, 8*mm))
+    story.append(Spacer(1, 6*mm))
     
     # Gesamtindex
     overall_interpretation = get_interpretation_compact(overall_score)
@@ -791,18 +791,20 @@ def create_compact_pdf_report(answers, wg_selected, test_data_created=False):
         ["GESAMTINDEX", f"{overall_score:.2f}/5.0", overall_interpretation]
     ]
     
-    overall_table = Table(overall_data, colWidths=[100*mm, 40*mm, 40*mm])
+    overall_table = Table(overall_data, colWidths=[90*mm, 35*mm, 35*mm])
     overall_table.setStyle(TableStyle([
-        ('FONT', (0,0), (-1,-1), 'Helvetica-Bold', 12),
+        ('FONT', (0,0), (-1,-1), 'Helvetica-Bold', 11),
         ('BACKGROUND', (0,0), (-1,-1), get_color_for_score(overall_score)),
         ('TEXTCOLOR', (0,0), (-1,-1), colors.white),
         ('ALIGN', (0,0), (-1,-1), 'CENTER'),
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
         ('GRID', (0,0), (-1,-1), 1, colors.white),
-        ('BOX', (0,0), (-1,-1), 2, colors.black),
+        ('BOX', (0,0), (-1,-1), 1, colors.black),
+        ('TOPPADDING', (0,0), (-1,-1), 6),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 6),
     ]))
     story.append(overall_table)
-    story.append(Spacer(1, 10*mm))
+    story.append(Spacer(1, 8*mm))
     
     # Domänen Übersichtstabelle
     domains_header = ["BEREICH", "SCORE", "BEWERTUNG"]
@@ -817,14 +819,15 @@ def create_compact_pdf_report(answers, wg_selected, test_data_created=False):
             interpretation
         ])
     
-    domains_table = Table(domains_data, colWidths=[120*mm, 30*mm, 30*mm])
+    domains_table = Table(domains_data, colWidths=[100*mm, 25*mm, 35*mm])
     domains_table.setStyle(TableStyle([
         # Header
-        ('FONT', (0,0), (-1,0), 'Helvetica-Bold', 10),
+        ('FONT', (0,0), (-1,0), 'Helvetica-Bold', 9),
         ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#2F4F4F")),
         ('TEXTCOLOR', (0,0), (-1,0), colors.white),
         ('ALIGN', (0,0), (-1,0), 'CENTER'),
-        ('BOTTOMPADDING', (0,0), (-1,0), 6),
+        ('BOTTOMPADDING', (0,0), (-1,0), 4),
+        ('TOPPADDING', (0,0), (-1,0), 3),
         # Daten
         ('FONT', (0,1), (-1,-1), 'Helvetica', 8),
         ('ALIGN', (0,1), (-1,-1), 'LEFT'),
@@ -833,6 +836,8 @@ def create_compact_pdf_report(answers, wg_selected, test_data_created=False):
         ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor("#CCCCCC")),
         ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, colors.HexColor("#F8F9FA")]),
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('TOPPADDING', (0,1), (-1,-1), 2),
+        ('BOTTOMPADDING', (0,1), (-1,-1), 2),
     ]))
     
     # Bedingte Formatierung für Bewertungsspalte
@@ -841,38 +846,40 @@ def create_compact_pdf_report(answers, wg_selected, test_data_created=False):
         domains_table.setStyle(TableStyle([
             ('BACKGROUND', (2,i), (2,i), get_color_for_score(score)),
             ('TEXTCOLOR', (2,i), (2,i), colors.white),
-            ('FONT', (2,i), (2,i), 'Helvetica-Bold', 8),
+            ('FONT', (2,i), (2,i), 'Helvetica-Bold', 7),
         ]))
     
     story.append(domains_table)
-    story.append(Spacer(1, 5*mm))
+    story.append(Spacer(1, 4*mm))
     
     # Legende
     legend_data = [
-        ["LEGENDE:", "4.2-5.0 = Sehr gut", "3.6-4.1 = Gut", "3.0-3.5 = Mittel", "<3.0 = Verbesserungsbedarf"]
+        ["LEGENDE:", "4.2-5.0 = Sehr gut", "3.6-4.1 = Gut", "3.0-3.5 = Mittel", "<3.0 = Verb.Bedarf"]
     ]
     
-    legend_table = Table(legend_data, colWidths=[25*mm, 35*mm, 30*mm, 30*mm, 50*mm])
+    legend_table = Table(legend_data, colWidths=[20*mm, 32*mm, 28*mm, 28*mm, 42*mm])
     legend_table.setStyle(TableStyle([
-        ('FONT', (0,0), (-1,-1), 'Helvetica', 7),
+        ('FONT', (0,0), (-1,-1), 'Helvetica', 6),
         ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#F0F0F0")),
         ('ALIGN', (0,0), (-1,-1), 'CENTER'),
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
         ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor("#CCCCCC")),
+        ('TOPPADDING', (0,0), (-1,-1), 1),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 1),
     ]))
     story.append(legend_table)
     
     # Seitenumbruch für Seite 2
-    story.append(Spacer(1, 1000*mm))  # Erzwingt Seitenumbruch
+    story.append(PageBreak())
     
     # SEITE 2: Detaillierte Subthemen Matrix
     # ======================================
     
     story.append(Paragraph("DETAILÜBERSICHT - ALLE SUBTHEMEN", styles['CompactTitle']))
-    story.append(Spacer(1, 5*mm))
+    story.append(Spacer(1, 4*mm))
     
     # Subthemen Matrix Header
-    subthemen_header = ["BEREICH", "SUBTHEMA 1", "SUBTHEMA 2", "SUBTHEMA 3", "SUBTHEMA 4"]
+    subthemen_header = ["BEREICH", "SUB 1", "SUB 2", "SUB 3", "SUB 4"]
     subthemen_data = [subthemen_header]
     
     # Daten für alle Domänen und Subdomänen
@@ -881,33 +888,36 @@ def create_compact_pdf_report(answers, wg_selected, test_data_created=False):
         
         for subdomain in range(1, 5):
             score = get_subdomain_avg(answers, domain, subdomain)
-            domain_row.append(f"{score:.2f}" if score is not None else "–")
+            domain_row.append(f"{score:.1f}" if score is not None else "–")
         
         subthemen_data.append(domain_row)
     
-    # Subthemen Tabelle
-    subthemen_table = Table(subthemen_data, colWidths=[70*mm, 25*mm, 25*mm, 25*mm, 25*mm])
+    # Subthemen Tabelle - kompaktere Spalten
+    subthemen_table = Table(subthemen_data, colWidths=[85*mm, 18*mm, 18*mm, 18*mm, 18*mm])
     
     # Komplexes Styling für bessere Lesbarkeit
     subthemen_table.setStyle(TableStyle([
         # Header
-        ('FONT', (0,0), (-1,0), 'Helvetica-Bold', 9),
+        ('FONT', (0,0), (-1,0), 'Helvetica-Bold', 8),
         ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#2F4F4F")),
         ('TEXTCOLOR', (0,0), (-1,0), colors.white),
         ('ALIGN', (0,0), (-1,0), 'CENTER'),
-        ('BOTTOMPADDING', (0,0), (-1,0), 6),
+        ('BOTTOMPADDING', (0,0), (-1,0), 4),
+        ('TOPPADDING', (0,0), (-1,0), 3),
         # Bereichsnamen (erste Spalte)
-        ('FONT', (0,1), (0,-1), 'Helvetica-Bold', 8),
+        ('FONT', (0,1), (0,-1), 'Helvetica-Bold', 7),
         ('BACKGROUND', (0,1), (0,-1), colors.HexColor("#F0F0F0")),
         ('ALIGN', (0,1), (0,-1), 'LEFT'),
-        ('LEFTPADDING', (0,1), (0,-1), 3),
+        ('LEFTPADDING', (0,1), (0,-1), 2),
         # Score-Zellen
-        ('FONT', (1,1), (-1,-1), 'Helvetica', 8),
+        ('FONT', (1,1), (-1,-1), 'Helvetica', 7),
         ('ALIGN', (1,1), (-1,-1), 'CENTER'),
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
         # Grid und Rahmen
         ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor("#CCCCCC")),
         ('ROWBACKGROUNDS', (1,1), (-1,-1), [colors.white, colors.HexColor("#F8F9FA")]),
+        ('TOPPADDING', (0,1), (-1,-1), 1),
+        ('BOTTOMPADDING', (0,1), (-1,-1), 1),
     ]))
     
     # Bedingte Farbformatierung für alle Score-Zellen
@@ -919,38 +929,44 @@ def create_compact_pdf_report(answers, wg_selected, test_data_created=False):
                 subthemen_table.setStyle(TableStyle([
                     ('BACKGROUND', (col, row), (col, row), get_color_for_score(score)),
                     ('TEXTCOLOR', (col, row), (col, row), colors.white),
-                    ('FONT', (col, row), (col, row), 'Helvetica-Bold', 8),
+                    ('FONT', (col, row), (col, row), 'Helvetica-Bold', 7),
                 ]))
     
     story.append(subthemen_table)
-    story.append(Spacer(1, 5*mm))
+    story.append(Spacer(1, 4*mm))
     
-    # Subthemen Legende
-    subthemen_legende_data = []
+    # Subthemen Legende - extrem kompakt
+    story.append(Paragraph("Subthemen-Legende:", styles['CompactHeader']))
     
+    # Kompakte Legende als mehrzeilige Tabelle
+    legende_data = []
     for domain in range(1, 9):
-        legende_row = [DOMAINS[domain]]
+        row = [f"{domain}. {DOMAINS[domain][:25]}..."]
         for subdomain in range(1, 5):
-            legende_row.append(SUBDOMAINS[domain][subdomain])
-        subthemen_legende_data.append(legende_row)
+            sub_name = SUBDOMAINS[domain][subdomain]
+            # Kürze die Namen stark
+            short_name = sub_name[:12] + "..." if len(sub_name) > 15 else sub_name
+            row.append(f"{subdomain}:{short_name}")
+        legende_data.append(row)
     
-    # Kleine Legenden-Tabelle
-    legende_header = ["Bereich", "Subthema 1", "Subthema 2", "Subthema 3", "Subthema 4"]
-    subthemen_legende_data.insert(0, legende_header)
+    # Header für Legende
+    legende_header = ["Bereich", "1", "2", "3", "4"]
+    legende_data.insert(0, legende_header)
     
-    legende_table = Table(subthemen_legende_data, colWidths=[70*mm, 25*mm, 25*mm, 25*mm, 25*mm])
+    legende_table = Table(legende_data, colWidths=[50*mm, 30*mm, 30*mm, 30*mm, 30*mm])
     legende_table.setStyle(TableStyle([
-        ('FONT', (0,0), (-1,0), 'Helvetica-Bold', 7),
-        ('FONT', (0,1), (-1,-1), 'Helvetica', 6),
+        ('FONT', (0,0), (-1,0), 'Helvetica-Bold', 6),
+        ('FONT', (0,1), (-1,-1), 'Helvetica', 5),
         ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#2F4F4F")),
         ('TEXTCOLOR', (0,0), (-1,0), colors.white),
         ('BACKGROUND', (0,1), (-1,-1), colors.HexColor("#F8F9FA")),
         ('GRID', (0,0), (-1,-1), 0.25, colors.HexColor("#DDDDDD")),
-        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+        ('ALIGN', (0,0), (-1,-1), 'LEFT'),
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('TOPPADDING', (0,0), (-1,-1), 0.5),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 0.5),
     ]))
     
-    story.append(Paragraph("Subthemen-Legende:", styles['CompactHeader']))
     story.append(legende_table)
     
     # PDF erstellen
@@ -1273,19 +1289,23 @@ def render_results():
     
     with col2:
         # NEU: Kompakter 2-Seiten Bericht
-        compact_pdf_buffer = create_compact_pdf_report(
-            st.session_state.answers,
-            st.session_state.wg_selected,
-            st.session_state.get('test_data_created', False)
-        )
-        st.download_button(
-            label="📄 Kompakter Report (2 Seiten)",
-            data=compact_pdf_buffer,
-            file_name=f"Befragung_Kompakt_{st.session_state.wg_selected}_{datetime.now().strftime('%Y%m%d')}.pdf",
-            mime="application/pdf",
-            type="secondary"
-        )
-        st.caption("Extrem kompakt für Vorgesetzte - nur die wichtigsten Daten")
+        try:
+            compact_pdf_buffer = create_compact_pdf_report(
+                st.session_state.answers,
+                st.session_state.wg_selected,
+                st.session_state.get('test_data_created', False)
+            )
+            st.download_button(
+                label="📄 Kompakter Report (2 Seiten)",
+                data=compact_pdf_buffer,
+                file_name=f"Befragung_Kompakt_{st.session_state.wg_selected}_{datetime.now().strftime('%Y%m%d')}.pdf",
+                mime="application/pdf",
+                type="secondary"
+            )
+            st.caption("Extrem kompakt für Vorgesetzte - nur die wichtigsten Daten")
+        except Exception as e:
+            st.error(f"Fehler beim Erstellen des kompakten PDFs: {str(e)}")
+            st.info("Bitte verwende den ausführlichen Bericht oder kontaktiere den Administrator.")
     
     # Neue Befragung starten
     st.write("---")
