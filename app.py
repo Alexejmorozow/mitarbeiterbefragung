@@ -91,7 +91,7 @@ SUBDOMAINS = {
 QUESTIONS = {
     # DOMÄNE 1 – Arbeitsbelastung & Zeitdruck
     (1, 1): [
-        "Ich habe genügend Zeit, um Bewonner*innen professionell und in Ruhe zu betreuen.",
+        "Ich habe genügend Zeit, um Bewonner/innen professionell und in Ruhe zu betreuen.",
         "Ich schaffe die Dokumentation üblicherweise innerhalb der regulären Arbeitszeit."
     ],
     (1, 2): [
@@ -110,7 +110,7 @@ QUESTIONS = {
     # DOMÄNE 2 – Einarbeitung & Personalentwicklung
     (2, 1): [
         "Die Einarbeitung neuer Mitarbeitender folgt einem klaren Plan.",
-        "Neue Kolleg*innen wissen früh, was von ihnen erwartet wird."
+        "Neue Kolleg/innen wissen früh, was von ihnen erwartet wird."
     ],
     (2, 2): [
         "Neue Mitarbeitende haben feste Personen, die sie begleiten.",
@@ -131,7 +131,7 @@ QUESTIONS = {
         "Wir unterstützen uns gegenseitig."
     ],
     (3, 2): [
-        "Kolleg*innen halten sich an Absprachen.",
+        "Kolleg/innen halten sich an Absprachen.",
         "Ich kann mich auf mein Team verlassen."
     ],
     (3, 3): [
@@ -154,7 +154,7 @@ QUESTIONS = {
     ],
     (4, 3): [
         "Die Leitung ist erreichbar, wenn ich Unterstützung brauche.",
-        "Auch in schwierigen Situationen habe ich Rückhalt."
+        "Auch in schwierigen Situationen habe ich von meiner Führungsperson Rückhalt."
     ],
     (4, 4): [
         "Ziele und Prioritäten sind klar kommuniziert.",
@@ -230,7 +230,7 @@ QUESTIONS = {
     ],
     (8, 4): [
         "Digitale Kommunikationswege sind klar geregelt.",
-        "Es gibt kein Durcheinander mehrerer widersprüchlicher Kanäle."
+        "Es gibt kein Durcheinander mehrerer Kanäle."
     ]
 }
 
@@ -476,11 +476,11 @@ def render_wg_selection():
     - Wo die Ursachen für kritischere Bewertungen liegen
 
     **Wichtig:** Es geht nicht um die Beurteilung Einzelner, sondern um eine strukturierte Analyse der 
-    Arbeitsbedingungen, Belastungen und Teamstärken **in unserem Hausverbund A**.
+    Arbeitsbedingungen, Belastungen und Teamstärken.
 
     **Deine Teilnahme ist wertvoll**, denn nur durch eine breite Beteiligung entsteht ein realistisches Bild 
-    unserer Situation **im Hausverbund A**. Je genauer die Rückmeldungen, desto besser können wir verstehen, 
-    what im Alltag gut funktioniert und wo Verbesserungen sinnvoll sind.
+    unserer Situation. Je genauer die Rückmeldungen, desto besser können wir verstehen, 
+    was im Alltag gut funktioniert und wo Verbesserungen sinnvoll sind.
 
     Vielen Dank für deine Mitarbeit und die investierte Zeit!
     """)
