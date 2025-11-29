@@ -348,11 +348,11 @@ SPECIAL_QUESTIONS = {
     
     # DOMÄNE 8 – Kommunikation & Informationsfluss (angepasst)
     (8, 1): [
-        "Übergaben im Tagesangebot sind vollständig und strukturiert.",
+        "Übergaben sind vollständig und strukturiert.",
         "Ich weiss zu Arbeitsbeginn, was mich erwartet."
     ],
     (8, 2): [
-        "Die Zusammenarbeit zwischen Tagesangebot, Pflege, Agogik, Therapie, Hauswirtschaft etc. läuft reibungslos.",
+        "Die Zusammenarbeit zwischen Spezialangebot, Wohnen, Agogik, Therapie, Hauswirtschaft etc. läuft reibungslos.",
         "Informationen werden konsistent weitergegeben."
     ],
     (8, 3): [
