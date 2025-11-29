@@ -530,24 +530,13 @@ def render_wg_selection():
         border-left: 4px solid rgba(255,255,255,0.5);
         margin: 20px 0;
     '>
-        <div style='display: flex; align-items: flex-start; margin-bottom: 15px;'>
+        <div style='display: flex; align-items: flex-start;'>
             <span style='font-size: 24px; margin-right: 15px;'>⚠️</span>
             <div>
                 <h4 style='color: white; margin: 0 0 8px 0;'>Wichtiger Hinweis</h4>
                 <p style='margin: 0; font-size: 14px; opacity: 0.9;'>
                 Es geht <strong>nicht um die Beurteilung Einzelner</strong>, sondern um eine strukturierte Analyse der 
                 <strong>Arbeitsbedingungen, Belastungen und Teamstärken</strong>.
-                </p>
-            </div>
-        </div>
-        
-        <div style='display: flex; align-items: flex-start;'>
-            <span style='font-size: 24px; margin-right: 15px;'>📈</span>
-            <div>
-                <h4 style='color: white; margin: 0 0 8px 0;'>Deine Teilnahme ist wertvoll</h4>
-                <p style='margin: 0; font-size: 14px; opacity: 0.9;'>
-                Nur durch eine <strong>breite Beteiligung</strong> entsteht ein realistisches Bild unserer Situation. 
-                Je genauer die Rückmeldungen, desto besser können wir verstehen, was im Alltag gut funktioniert.
                 </p>
             </div>
         </div>
