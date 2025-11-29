@@ -282,7 +282,7 @@ SPECIAL_QUESTIONS = {
         "Ich kann mich auf mein Team verlassen."
     ],
     (3, 3): [
-        "Zuständigkeiten und Verantwortungen im Tagesangebot sind klar geregelt.",
+        "Zuständigkeiten und Verantwortungen im Spezialangebot sind klar geregelt.",
         "Jede Person weiss, was zu tun ist."
     ],
     (3, 4): [
