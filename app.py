@@ -544,7 +544,7 @@ def render_wg_selection():
         <div style='display: flex; align-items: flex-start;'>
             <span style='font-size: 24px; margin-right: 15px;'>📈</span>
             <div>
-                <h4 style='color: white; margin: 0 0 8px 0;'>Ihre Teilnahme ist wertvoll</h4>
+                <h4 style='color: white; margin: 0 0 8px 0;'>Deine Teilnahme ist wertvoll</h4>
                 <p style='margin: 0; font-size: 14px; opacity: 0.9;'>
                 Nur durch eine <strong>breite Beteiligung</strong> entsteht ein realistisches Bild unserer Situation. 
                 Je genauer die Rückmeldungen, desto besser können wir verstehen, was im Alltag gut funktioniert.
@@ -561,7 +561,7 @@ def render_wg_selection():
         margin-top: 20px;
     '>
         <p style='font-size: 16px; margin: 0; opacity: 0.9;'>
-        <strong>Vielen Dank für Ihre Mitarbeit und die investierte Zeit.</strong>
+        <strong>Vielen Dank für deine Mitarbeit und die investierte Zeit.</strong>
         </p>
     </div>
     </div>
@@ -571,12 +571,12 @@ def render_wg_selection():
     st.subheader("Befragung starten")
     
     selected_wg = st.selectbox(
-        "Wählen Sie Ihre Abteilung aus:",
+        "Wähle deine Abteilung aus:",
         WG_OPTIONS,
         key="wg_select"
     )
     
-    st.info("**Anonymität garantiert** - Ihre Antworten können nicht Ihnen persönlich zugeordnet werden.")
+    st.info("**Anonymität garantiert** - Deine Antworten können nicht dir persönlich zugeordnet werden.")
     
     # Start-Button
     if st.button("📝 Befragung starten", type="primary", use_container_width=True):
@@ -585,7 +585,7 @@ def render_wg_selection():
             st.session_state.current_step = 'survey'
             st.rerun()
         else:
-            st.warning("Bitte wählen Sie zuerst eine Abteilung aus.")
+            st.warning("Bitte wähle zuerst eine Abteilung aus.")
 
 def render_survey():
     """Haupt-Befragung mit allen Fragen"""
@@ -1092,7 +1092,7 @@ def render_results():
     2. **Drucke ihn aus** 
     3. **Lege ihn deiner/m Vorgesetzten in ihr Fach**
     
-    Der Bericht enthält alle wichtigen Ergebnisse auf einer Seite - perfekt für den schnellen Überblick!
+    Der Bericht enthält alle wichtigen Ergebnisse auf einer Seite.
     """)
     
     # PDF Download Button
@@ -1112,8 +1112,6 @@ def render_results():
             use_container_width=True
         )
         
-        st.caption("✅ Extrem kompakter 1-Seiten-Report - ideal für Vorgesetzte")
-        
     except Exception as e:
         st.error(f"❌ Fehler beim Erstellen des PDFs: {str(e)}")
         st.info("Bitte versuche es erneut oder kontaktiere den Administrator.")
@@ -1122,19 +1120,10 @@ def render_results():
     st.write("---")
     st.subheader("Neue Befragung starten")
     
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        if st.button("🔄 Neue Test-Befragung", use_container_width=True):
-            st.session_state.answers = create_test_data()
-            st.session_state.test_data_created = True
-            st.rerun()
-    
-    with col2:
-        if st.button("🏠 Neue echte Befragung", use_container_width=True):
-            for key in list(st.session_state.keys()):
-                del st.session_state[key]
-            st.rerun()
+    if st.button("🏠 Neue Befragung starten", use_container_width=True):
+        for key in list(st.session_state.keys()):
+            del st.session_state[key]
+        st.rerun()
 
 def main():
     """Hauptfunktion der Anwendung"""
