@@ -87,7 +87,7 @@ SUBDOMAINS = {
     }
 }
 
-# Vollständiger Fragenkatalog
+# Vollständiger Fragenkatalog (Standard)
 QUESTIONS = {
     # DOMÄNE 1 – Arbeitsbelastung & Zeitdruck
     (1, 1): [
@@ -109,7 +109,7 @@ QUESTIONS = {
     
     # DOMÄNE 2 – Einarbeitung & Personalentwicklung
     (2, 1): [
-        "Die Einarbeitung neuer Mitarbeitender folgt einem klaren Plan.",
+        "Die Einarbeitung neuer Mitarbeitenden folgt einem klaren Plan.",
         "Neue Kolleg/innen wissen früh, was von ihnen erwartet wird."
     ],
     (2, 2): [
@@ -234,6 +234,137 @@ QUESTIONS = {
     ]
 }
 
+# Angepasster Fragenkatalog für Spezialangebot
+SPECIAL_QUESTIONS = {
+    # DOMÄNE 1 – Arbeitsbelastung & Zeitdruck (angepasst für Spezialangebot)
+    (1, 1): [
+        "Ich habe genügend Zeit, um die Teilnehmer/innen während des Programms professionell und in Ruhe zu begleiten.",
+        "Ich schaffe die Dokumentation üblicherweise innerhalb der regulären Arbeitszeit."
+    ],
+    (1, 2): [
+        "Ich kann meine Aufgaben während des Programms meistens ohne häufige Unterbrechungen durchführen.",
+        "Ungeplante Störungen hindern mich regelmässig an konzentrierter Arbeit."  # NEGATIV
+    ],
+    (1, 3): [
+        "Die Aufgaben haben im Vergleich zum Vorjahr spürbar zugenommen.",  # NEGATIV
+        "Die Anforderungen sind gestiegen, ohne dass Ressourcen angepasst wurden."  # NEGATIV
+    ],
+    (1, 4): [
+        "Bei Personalausfällen wird schnell und professionell reagiert.",
+        "Ich habe das Gefühl, dass bei Ausfällen fair reagiert wird."
+    ],
+    
+    # DOMÄNE 2 – Einarbeitung & Personalentwicklung (angepasst)
+    (2, 1): [
+        "Die Einarbeitung neuer Mitarbeitender folgt einem klaren Ablauf.",
+        "Neue Kolleg/innen wissen früh, was im von ihnen erwartet wird."
+    ],
+    (2, 2): [
+        "Neue Mitarbeitende haben feste Personen, die sie begleiten.",
+        "Bei Unsicherheiten ist verlässlich jemand ansprechbar."
+    ],
+    (2, 3): [
+        "Übergaben zwischen den Mitarbeitenden sind vollständig und verständlich.",
+        "Wichtige Infos gehen zwischen den Programmzeiten nicht verloren."
+    ],
+    (2, 4): [
+        "Ich habe ausreichend Möglichkeiten zur Weiterentwicklung.",
+        "Fortbildungen sind praxisrelevant und hilfreich."
+    ],
+    
+    # DOMÄNE 3 – Zusammenarbeit & Teamklima (angepasst)
+    (3, 1): [
+        "In unserem Team besteht echter Zusammenhalt, auch bei Stress.",
+        "Wir unterstützen uns gegenseitig."
+    ],
+    (3, 2): [
+        "Kolleg/innen halten sich an Absprachen.",
+        "Ich kann mich auf mein Team verlassen."
+    ],
+    (3, 3): [
+        "Zuständigkeiten und Verantwortungen im Tagesangebot sind klar geregelt.",
+        "Jede Person weiss, was zu tun ist."
+    ],
+    (3, 4): [
+        "Konflikte werden offen angesprochen.",
+        "Kritik ist möglich, ohne negative Folgen befürchten zu müssen."
+    ],
+    
+    # DOMÄNE 4 – Führung (identisch - verwende normale QUESTIONS)
+    
+    # DOMÄNE 5 – Gesundheit & Belastung (angepasst minimal)
+    (5, 1): [
+        "Die körperliche Belastung bei uns ist langfristig tragbar.",
+        "Ich kann meinen Körper schonen, ohne die Qualität zu verlieren."
+    ],
+    (5, 2): [
+        "Ich kann nach der Arbeit gut abschalten.",
+        "Emotionale Belastungen wirken nicht lange nach."
+    ],
+    (5, 3): [
+        "Ich kann Pausen meistens wie geplant einhalten.",
+        "Ich habe ausreichend Möglichkeiten zum kurzen Auftanken."
+    ],
+    (5, 4): [
+        "Gesundheitsangebote sind vorhanden und realistisch nutzbar.",
+        "Gesundheitsprävention gehört sichtbar zum Arbeitsalltag."
+    ],
+    
+    # DOMÄNE 6 – Technische & organisatorische Unterstützungssysteme (angepasst)
+    (6, 1): [
+        "Hilfsmittel für die Programmgestaltung sind funktionsfähig und verfügbar.",
+        "Ich kann benötigte Materialien jederzeit nutzen."
+    ],
+    (6, 2): [
+        "Digitale Dokumentation spart Zeit.",
+        "Systeme sind logisch und intuitiv bedienbar."
+    ],
+    (6, 3): [
+        "Es bestehen klare und verständliche Abläufe für die Spezialangebote.",
+        "Standards werden im Alltag angewendet."
+    ],
+    (6, 4): [
+        "Material und Hilfsmittel sind ausreichend vorhanden.",
+        "Defekte Geräte werden schnell repariert oder ersetzt."
+    ],
+    
+    # DOMÄNE 7 – Dienst- & Einsatzplanung (angepasst)
+    (7, 1): [
+        "Dienstpläne sind früh und zuverlässig verfügbar.",
+        "Kurzfristige Änderungen sind die Ausnahme."
+    ],
+    (7, 2): [
+        "Dienste sind fair verteilt.",
+        "Die Belastung ist im Team ausgewogen."
+    ],
+    (7, 3): [
+        "Bei Ausfällen wird kompetent reagiert.",
+        "Ich werde dabei nicht dauerhaft überlastet."
+    ],
+    (7, 4): [
+        "Ich habe ausreichend Erholungszeit zwischen den Arbeitstagen.",
+        "Belastende Dienstfolgen treten nicht dauerhaft auf."
+    ],
+    
+    # DOMÄNE 8 – Kommunikation & Informationsfluss (angepasst)
+    (8, 1): [
+        "Übergaben im Tagesangebot sind vollständig und strukturiert.",
+        "Ich weiss zu Arbeitsbeginn, was mich erwartet."
+    ],
+    (8, 2): [
+        "Die Zusammenarbeit zwischen Tagesangebot, Pflege, Agogik, Therapie, Hauswirtschaft etc. läuft reibungslos.",
+        "Informationen werden konsistent weitergegeben."
+    ],
+    (8, 3): [
+        "Entscheidungen werden erklärt und begründet.",
+        "Ich fühle mich ausreichend informiert."
+    ],
+    (8, 4): [
+        "Digitale Kommunikationswege sind klar geregelt.",
+        "Es gibt kein Durcheinander mehrerer Kanäle."
+    ]
+}
+
 # Farbschema: Matteres Grün, Anthrazit, Weiss
 COLORS = {
     "mint": "#A8D5BA",
@@ -263,12 +394,20 @@ SCORE_MAP_NEGATIVE = {
 }
 
 # Definition welche Fragen negativ sind (umgekehrte Skala)
-# Format: (Domain, Subdomain): [Fragen-Indizes die negativ sind]
 NEGATIVE_QUESTIONS = {
     (1, 2): [1],  # "Ungeplante Störungen hindern mich..."
     (1, 3): [0, 1],  # Beide Fragen in Arbeitsverdichtung sind negativ
-    # Weitere negative Fragen können hier hinzugefügt werden
+    # Gleiche negative Fragen gelten auch für Spezialangebot
 }
+
+def get_questions_for_wg(domain, subdomain, wg_name):
+    """Gibt die passenden Fragen für die jeweilige WG zurück"""
+    if wg_name == "Spezialangebot":
+        # Für Spezialangebot: spezielle Fragen oder falls nicht vorhanden, normale Fragen
+        return SPECIAL_QUESTIONS.get((domain, subdomain), QUESTIONS.get((domain, subdomain)))
+    else:
+        # Für alle anderen WGs: normale Fragen
+        return QUESTIONS.get((domain, subdomain))
 
 def get_score_for_question(domain, subdomain, question_index, answer):
     """Gibt den korrekten Score für eine Frage zurück (berücksichtigt negative Formulierungen)"""
@@ -600,10 +739,12 @@ def render_survey():
         return
     
     domain, subdomain = current_key
-    questions = QUESTIONS.get(current_key, [])
+    
+    # Fragen basierend auf WG auswählen
+    questions = get_questions_for_wg(domain, subdomain, st.session_state.wg_selected)
     
     # Fortschrittsberechnung
-    total_questions = len(QUESTIONS)
+    total_questions = len(QUESTIONS)  # Gesamtzahl bleibt gleich
     completed_questions = len(st.session_state.answers)
     progress = completed_questions / total_questions
     
@@ -648,6 +789,8 @@ def render_survey():
                 st.rerun()
         else:
             st.button("Weiter →", disabled=True)
+
+# ... (der Rest des Codes bleibt gleich - calculate_scores, create_radar_chart, etc.)
 
 def calculate_scores():
     """Berechnet die Scores aus den Antworten mit korrekter Behandlung negativer Fragen"""
